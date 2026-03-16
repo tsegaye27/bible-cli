@@ -37,6 +37,8 @@ Special thanks to the [EOTCOpenSource/80-weahadu](https://github.com/EOTCOpenSou
 - `h` / `Left`: Move focus to the left pane.
 - `l` / `Right` / `Enter`: Move focus to the right pane / select.
 - `/`: Enter search mode (filters current pane).
+- `Esc`: Exit search mode and clear filter.
+- `Enter`: (In search mode) Confirm selection and exit search.
 - `g` / `Home`: Jump to top.
 - `G` / `End`: Jump to bottom.
 - `q` / `Esc`: Quit or exit search.

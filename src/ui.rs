@@ -85,10 +85,12 @@ pub fn render(frame: &mut Frame, app: &mut App) {
 
     // --- Verses Pane ---
     let verses_data = app.get_flattened_verses();
-    let verses_text: String = verses_data.iter()
-        .map(|(n, t)| format!("{}. {}", n, t))
-        .collect::<Vec<String>>()
-        .join("\n\n");
+    let verses: Vec<ListItem> = verses_data.iter()
+        .map(|(n, t)| {
+            ListItem::new(format!("{}. {}\n", n, t)) // Added newline for spacing
+                .style(Style::default().fg(Color::Rgb(240, 240, 240)))
+        })
+        .collect();
 
     let verses_block = Block::default()
         .borders(Borders::ALL)
@@ -100,13 +102,15 @@ pub fn render(frame: &mut Frame, app: &mut App) {
             inactive_border_style
         });
 
-    let verses_paragraph = Paragraph::new(verses_text)
+    let verses_list = List::new(verses)
         .block(verses_block.padding(ratatui::widgets::Padding::horizontal(1)))
-        .wrap(Wrap { trim: true })
-        .scroll((app.verse_scroll, 0))
-        .style(Style::default().fg(Color::Rgb(240, 240, 240))); // Clean white for text
+        .highlight_style(if app.active_pane == Pane::Verses {
+             Style::default().bg(Color::Rgb(40, 44, 52))
+        } else {
+             Style::default()
+        });
 
-    frame.render_widget(verses_paragraph, content_chunks[2]);
+    frame.render_stateful_widget(verses_list, content_chunks[2], &mut app.verses_state);
 
     // --- Search Input ---
     if app.is_searching {

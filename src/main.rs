@@ -86,7 +86,7 @@ where
                                     app.load_current_book_filtered().ok();
                                 },
                                 Pane::Chapters => app.chapters_state.select(Some(0)),
-                                Pane::Verses => app.verse_scroll = 0,
+                                Pane::Verses => app.verses_state.select(Some(0)),
                             }
                         }
                         KeyCode::Char('G') | KeyCode::End => {
@@ -101,7 +101,8 @@ where
                                     app.chapters_state.select(Some(len.saturating_sub(1)));
                                 }
                                 Pane::Verses => {
-                                    app.verse_scroll = 1000; 
+                                    let len = app.get_flattened_verses().len();
+                                    app.verses_state.select(Some(len.saturating_sub(1)));
                                 }
                             }
                         }

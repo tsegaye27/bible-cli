@@ -14,8 +14,8 @@ pub struct App {
     pub books_state: ListState,
     pub current_book: Option<Book>,
     pub chapters_state: ListState,
+    pub verses_state: ListState,
     pub active_pane: Pane,
-    pub verse_scroll: u16,
     pub search_query: String,
     pub is_searching: bool,
 }
@@ -32,8 +32,8 @@ impl App {
             books_state,
             current_book: None,
             chapters_state: ListState::default(),
+            verses_state: ListState::default(),
             active_pane: Pane::Books,
-            verse_scroll: 0,
             search_query: String::new(),
             is_searching: false,
         }
@@ -96,10 +96,22 @@ impl App {
                     None => 0,
                 };
                 self.chapters_state.select(Some(i));
-                self.verse_scroll = 0;
+                self.verses_state.select(Some(0));
             }
             Pane::Verses => {
-                self.verse_scroll = self.verse_scroll.saturating_add(1);
+                let verses = self.get_flattened_verses();
+                if verses.is_empty() { return; }
+                let i = match self.verses_state.selected() {
+                    Some(i) => {
+                        if i >= verses.len() - 1 {
+                            0
+                        } else {
+                            i + 1
+                        }
+                    }
+                    None => 0,
+                };
+                self.verses_state.select(Some(i));
             }
         }
     }
@@ -136,10 +148,22 @@ impl App {
                     None => 0,
                 };
                 self.chapters_state.select(Some(i));
-                self.verse_scroll = 0;
+                self.verses_state.select(Some(0));
             }
             Pane::Verses => {
-                self.verse_scroll = self.verse_scroll.saturating_sub(1);
+                let verses = self.get_flattened_verses();
+                if verses.is_empty() { return; }
+                let i = match self.verses_state.selected() {
+                    Some(i) => {
+                        if i == 0 {
+                            verses.len() - 1
+                        } else {
+                            i - 1
+                        }
+                    }
+                    None => 0,
+                };
+                self.verses_state.select(Some(i));
             }
         }
     }
@@ -156,6 +180,9 @@ impl App {
             }
             Pane::Chapters => {
                 self.active_pane = Pane::Verses;
+                if self.verses_state.selected().is_none() {
+                    self.verses_state.select(Some(0));
+                }
             }
             Pane::Verses => {}
         }
@@ -180,7 +207,7 @@ impl App {
                 let book = load_book(&metadata.file_path)?;
                 self.current_book = Some(book);
                 self.chapters_state.select(Some(0));
-                self.verse_scroll = 0;
+                self.verses_state.select(Some(0));
             }
         }
         Ok(())

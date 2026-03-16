@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
-use std::fs;
-use anyhow::Result;
+use anyhow::{Result, anyhow};
+use include_dir::{include_dir, Dir};
+
+static DATA_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/data");
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Verse {
@@ -38,19 +40,23 @@ pub struct BookMetadata {
     pub file_path: String,
 }
 
-pub fn load_books_metadata(data_dir: &str) -> Result<Vec<BookMetadata>> {
+pub fn load_books_metadata() -> Result<Vec<BookMetadata>> {
     let mut books = Vec::new();
-    let paths = fs::read_dir(format!("{}/am", data_dir))?;
+    
+    // Look into the embedded am directory
+    let am_dir = DATA_DIR.get_dir("am")
+        .ok_or_else(|| anyhow!("Could not find am directory in embedded data"))?;
 
-    for path in paths {
-        let path = path?.path();
-        if path.extension().and_then(|s| s.to_str()) == Some("json") {
-            let content = fs::read_to_string(&path)?;
-            let book: Book = serde_json::from_str(&content)?;
+    for file in am_dir.files() {
+        if file.path().extension().and_then(|s| s.to_str()) == Some("json") {
+            let content = file.contents_utf8()
+                .ok_or_else(|| anyhow!("Could not read embedded file as UTF-8"))?;
+            
+            let book: Book = serde_json::from_str(content)?;
             books.push(BookMetadata {
                 number: book.book_number,
                 name_am: book.book_name_am,
-                file_path: path.to_str().unwrap().to_string(),
+                file_path: file.path().to_str().unwrap().to_string(),
             });
         }
     }
@@ -60,7 +66,12 @@ pub fn load_books_metadata(data_dir: &str) -> Result<Vec<BookMetadata>> {
 }
 
 pub fn load_book(file_path: &str) -> Result<Book> {
-    let content = fs::read_to_string(file_path)?;
-    let book: Book = serde_json::from_str(&content)?;
+    let file = DATA_DIR.get_file(file_path)
+        .ok_or_else(|| anyhow!("Could not find embedded file: {}", file_path))?;
+    
+    let content = file.contents_utf8()
+        .ok_or_else(|| anyhow!("Could not read embedded file as UTF-8"))?;
+    
+    let book: Book = serde_json::from_str(content)?;
     Ok(book)
 }

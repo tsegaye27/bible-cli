@@ -25,8 +25,7 @@ Special thanks to the [EOTCOpenSource/80-weahadu](https://github.com/EOTCOpenSou
 ### Setup
 
 1. Clone this repository.
-2. Ensure the `data/` directory is present (containing the JSON files from 80-weahadu).
-3. Run the application:
+2. Run the application:
    ```bash
    cargo run --release
    ```
@@ -44,12 +43,12 @@ Special thanks to the [EOTCOpenSource/80-weahadu](https://github.com/EOTCOpenSou
 
 ## Deployment
 
-To deploy this as a standalone binary:
+This application is **completely self-contained**. The Bible data is embedded into the binary at compile time.
 
 1. Build the release version:
    ```bash
    cargo build --release
    ```
 2. The compiled binary will be located at `target/release/bible-cli`.
-3. You can move this binary to your `/usr/local/bin` or any directory in your `PATH`.
-4. **Note**: The binary expects the `data/` directory to be in the same location from which it is executed. To make it truly portable, you may want to bundle the data using `include_str!` or specify a data path via environment variables (future enhancement).
+3. You can move this single binary to your `/usr/local/bin` or any directory in your `PATH`.
+4. Run it from anywhere by simply typing `bible-cli`.

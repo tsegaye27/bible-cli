@@ -20,7 +20,7 @@ fn main() -> Result<()> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    let books_metadata = data::load_books_metadata("data")?;
+    let books_metadata = data::load_books_metadata()?;
     let mut app = App::new(books_metadata);
     app.load_current_book_filtered().ok();
 

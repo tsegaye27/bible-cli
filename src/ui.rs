@@ -133,7 +133,7 @@ pub fn render(frame: &mut Frame, app: &mut App) {
         .map(|b| b.book_name_am.clone())
         .unwrap_or_else(|| "...".to_string());
     
-    let current_chapter = if let Some(book) = &app.current_book {
+    let current_chapter = if let Some(_) = &app.current_book {
         let filtered_chapters = app.filtered_chapters();
         app.chapters_state.selected()
             .and_then(|i| filtered_chapters.get(i))

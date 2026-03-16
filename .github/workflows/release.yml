@@ -10,7 +10,9 @@ jobs:
     name: Build and Release
     runs-on: ubuntu-latest
     permissions:
-      contents: write # IMPORTANT: This allows the script to create a release and upload the binary
+      contents: write # Allows the script to create a release and upload the binary
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true # Opt into Node.js 24 to avoid deprecation warnings
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

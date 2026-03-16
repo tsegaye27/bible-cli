@@ -44,7 +44,10 @@ impl App {
             self.books_metadata.iter().collect()
         } else {
             self.books_metadata.iter()
-                .filter(|b| b.name_am.contains(&self.search_query))
+                .filter(|b| {
+                    b.name_am.contains(&self.search_query) || 
+                    b.number.to_string().contains(&self.search_query)
+                })
                 .collect()
         }
     }
@@ -153,12 +156,58 @@ impl App {
         }
     }
 
+    pub fn commit_search(&mut self) {
+        if self.search_query.is_empty() { return; }
+        
+        match self.active_pane {
+            Pane::Books => {
+                let filtered = self.filtered_books();
+                if let Some(i) = self.books_state.selected() {
+                    if let Some(selected_book) = filtered.get(i) {
+                        let target_number = selected_book.number;
+                        self.search_query.clear();
+                        if let Some(new_i) = self.books_metadata.iter().position(|b| b.number == target_number) {
+                            self.books_state.select(Some(new_i));
+                        }
+                    }
+                }
+            }
+            Pane::Chapters => {
+                let filtered = self.filtered_chapters();
+                if let Some(i) = self.chapters_state.selected() {
+                    if let Some(&chapter_num) = filtered.get(i) {
+                        self.search_query.clear();
+                        if let Some(book) = &self.current_book {
+                            if let Some(new_i) = book.chapters.iter().position(|c| c.chapter == chapter_num) {
+                                self.chapters_state.select(Some(new_i));
+                            }
+                        }
+                    }
+                }
+            }
+            Pane::Verses => {
+                let filtered = self.filtered_verses();
+                if let Some(i) = self.verses_state.selected() {
+                    if let Some(&(verse_num, _)) = filtered.get(i) {
+                        self.search_query.clear();
+                        let all_verses = self.get_flattened_verses_raw();
+                        if let Some(new_i) = all_verses.iter().position(|(v, _)| *v == verse_num) {
+                            self.verses_state.select(Some(new_i));
+                        }
+                    }
+                }
+            }
+        }
+        self.search_query.clear();
+        self.is_searching = false;
+    }
+
     pub fn next_pane(&mut self) {
+        self.commit_search();
         match self.active_pane {
             Pane::Books => {
                 if self.current_book.is_some() {
                     self.active_pane = Pane::Chapters;
-                    self.search_query.clear();
                     if self.chapters_state.selected().is_none() {
                         self.chapters_state.select(Some(0));
                     }
@@ -166,7 +215,6 @@ impl App {
             }
             Pane::Chapters => {
                 self.active_pane = Pane::Verses;
-                self.search_query.clear();
                 if self.verses_state.selected().is_none() {
                     self.verses_state.select(Some(0));
                 }
@@ -176,15 +224,14 @@ impl App {
     }
 
     pub fn previous_pane(&mut self) {
+        self.commit_search();
         match self.active_pane {
             Pane::Books => {}
             Pane::Chapters => {
                 self.active_pane = Pane::Books;
-                self.search_query.clear();
             }
             Pane::Verses => {
                 self.active_pane = Pane::Chapters;
-                self.search_query.clear();
             }
         }
     }

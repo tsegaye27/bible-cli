@@ -54,8 +54,12 @@ where
             if key.kind == KeyEventKind::Press {
                 if app.is_searching {
                     match key.code {
-                        KeyCode::Enter | KeyCode::Esc => {
+                        KeyCode::Enter => {
+                            app.commit_search();
+                        }
+                        KeyCode::Esc => {
                             app.is_searching = false;
+                            app.search_query.clear();
                         }
                         KeyCode::Backspace => {
                             app.search_query.pop();

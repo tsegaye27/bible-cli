@@ -5,6 +5,7 @@ use ratatui::{
     Frame,
 };
 use crate::app::{App, Pane};
+use textwrap::{wrap, Options};
 
 pub fn render(frame: &mut Frame, app: &mut App) {
     let main_layout = Layout::default()
@@ -85,9 +86,14 @@ pub fn render(frame: &mut Frame, app: &mut App) {
 
     // --- Verses Pane ---
     let verses_data = app.get_flattened_verses();
+    let verses_pane_width = content_chunks[2].width.saturating_sub(4) as usize; // Minus borders and padding
+    
     let verses: Vec<ListItem> = verses_data.iter()
         .map(|(n, t)| {
-            ListItem::new(format!("{}. {}\n", n, t)) // Added newline for spacing
+            let full_text = format!("{}. {}", n, t);
+            let wrapped_lines = wrap(&full_text, Options::new(verses_pane_width));
+            let joined_text = wrapped_lines.join("\n") + "\n"; // Added newline for spacing
+            ListItem::new(joined_text)
                 .style(Style::default().fg(Color::Rgb(240, 240, 240)))
         })
         .collect();

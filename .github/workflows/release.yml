@@ -9,6 +9,8 @@ jobs:
   build-and-release:
     name: Build and Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # IMPORTANT: This allows the script to create a release and upload the binary
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

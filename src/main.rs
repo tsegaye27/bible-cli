@@ -59,15 +59,33 @@ where
                         }
                         KeyCode::Backspace => {
                             app.search_query.pop();
-                            app.books_state.select(Some(0));
-                            app.chapters_state.select(Some(0));
-                            app.load_current_book_filtered().ok();
+                            match app.active_pane {
+                                Pane::Books => {
+                                    app.books_state.select(Some(0));
+                                    app.load_current_book_filtered().ok();
+                                }
+                                Pane::Chapters => {
+                                    app.chapters_state.select(Some(0));
+                                }
+                                Pane::Verses => {
+                                    app.verses_state.select(Some(0));
+                                }
+                            }
                         }
                         KeyCode::Char(c) => {
                             app.search_query.push(c);
-                            app.books_state.select(Some(0));
-                            app.chapters_state.select(Some(0));
-                            app.load_current_book_filtered().ok();
+                            match app.active_pane {
+                                Pane::Books => {
+                                    app.books_state.select(Some(0));
+                                    app.load_current_book_filtered().ok();
+                                }
+                                Pane::Chapters => {
+                                    app.chapters_state.select(Some(0));
+                                }
+                                Pane::Verses => {
+                                    app.verses_state.select(Some(0));
+                                }
+                            }
                         }
                         _ => {}
                     }
@@ -112,7 +130,7 @@ where
                                     app.chapters_state.select(Some(len.saturating_sub(1)));
                                 }
                                 Pane::Verses => {
-                                    let len = app.get_flattened_verses().len();
+                                    let len = app.filtered_verses().len();
                                     app.verses_state.select(Some(len.saturating_sub(1)));
                                 }
                             }

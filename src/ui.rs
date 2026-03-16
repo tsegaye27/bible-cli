@@ -85,14 +85,14 @@ pub fn render(frame: &mut Frame, app: &mut App) {
     frame.render_stateful_widget(chapters_list, content_chunks[1], &mut app.chapters_state);
 
     // --- Verses Pane ---
-    let verses_data = app.get_flattened_verses();
-    let verses_pane_width = content_chunks[2].width.saturating_sub(4) as usize; // Minus borders and padding
+    let filtered_verses = app.filtered_verses();
+    let verses_pane_width = content_chunks[2].width.saturating_sub(4) as usize;
     
-    let verses: Vec<ListItem> = verses_data.iter()
+    let verses: Vec<ListItem> = filtered_verses.iter()
         .map(|(n, t)| {
             let full_text = format!("{}. {}", n, t);
             let wrapped_lines = wrap(&full_text, Options::new(verses_pane_width));
-            let joined_text = wrapped_lines.join("\n") + "\n"; // Added newline for spacing
+            let joined_text = wrapped_lines.join("\n") + "\n";
             ListItem::new(joined_text)
                 .style(Style::default().fg(Color::Rgb(240, 240, 240)))
         })
@@ -117,7 +117,12 @@ pub fn render(frame: &mut Frame, app: &mut App) {
 
     // --- Search Input ---
     if app.is_searching {
-        let search_text = format!(" /{}", app.search_query);
+        let title = match app.active_pane {
+            Pane::Books => "ፈልግ (መጻሕፍት)",
+            Pane::Chapters => "ፈልግ (ምዕራፎች)",
+            Pane::Verses => "ፈልግ (ቁጥሮች)",
+        };
+        let search_text = format!(" {} > /{}", title, app.search_query);
         let search_bar = Paragraph::new(search_text)
             .style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD));
         frame.render_widget(search_bar, main_layout[1]);
@@ -128,11 +133,13 @@ pub fn render(frame: &mut Frame, app: &mut App) {
         .map(|b| b.book_name_am.clone())
         .unwrap_or_else(|| "...".to_string());
     
-    let filtered_chapters = app.filtered_chapters();
-    let current_chapter = app.chapters_state.selected()
-        .and_then(|i| filtered_chapters.get(i))
-        .cloned()
-        .unwrap_or(0);
+    let current_chapter = if let Some(book) = &app.current_book {
+        let filtered_chapters = app.filtered_chapters();
+        app.chapters_state.selected()
+            .and_then(|i| filtered_chapters.get(i))
+            .cloned()
+            .unwrap_or(0)
+    } else { 0 };
 
     let status_text = format!(
         " [q: Quit] [/: Search] [h/j/k/l: Nav] | {} - ምዕራፍ {}",

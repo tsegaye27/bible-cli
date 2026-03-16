@@ -1,7 +1,7 @@
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, List, ListItem, Paragraph, Wrap, BorderType},
+    widgets::{Block, Borders, List, ListItem, Paragraph, BorderType},
     Frame,
 };
 use crate::app::{App, Pane};
@@ -104,11 +104,8 @@ pub fn render(frame: &mut Frame, app: &mut App) {
 
     let verses_list = List::new(verses)
         .block(verses_block.padding(ratatui::widgets::Padding::horizontal(1)))
-        .highlight_style(if app.active_pane == Pane::Verses {
-             Style::default().bg(Color::Rgb(40, 44, 52))
-        } else {
-             Style::default()
-        });
+        .highlight_style(highlight_style)
+        .highlight_symbol(" ");
 
     frame.render_stateful_widget(verses_list, content_chunks[2], &mut app.verses_state);
 

@@ -10,6 +10,7 @@ use crossterm::{
 };
 use ratatui::{backend::CrosstermBackend, Terminal};
 use anyhow::Result;
+use arboard::Clipboard;
 use crate::app::{App, Pane};
 
 fn main() -> Result<()> {
@@ -44,6 +45,8 @@ fn run_app<B: ratatui::backend::Backend>(terminal: &mut Terminal<B>, app: &mut A
 where 
     B::Error: std::error::Error + Send + Sync + 'static 
 {
+    let mut clipboard = Clipboard::new().ok();
+
     loop {
         terminal.draw(|f| ui::render(f, app))?;
 
@@ -74,7 +77,15 @@ where
                         KeyCode::Char('j') | KeyCode::Down => app.next_item(),
                         KeyCode::Char('k') | KeyCode::Up => app.previous_item(),
                         KeyCode::Char('h') | KeyCode::Left => app.previous_pane(),
-                        KeyCode::Char('l') | KeyCode::Right | KeyCode::Enter => app.next_pane(),
+                        KeyCode::Char('l') | KeyCode::Right | KeyCode::Enter => {
+                            if app.active_pane == Pane::Verses {
+                                if let (Some(cb), Some(text)) = (&mut clipboard, app.get_selected_verse()) {
+                                    cb.set_text(text).ok();
+                                }
+                            } else {
+                                app.next_pane();
+                            }
+                        }
                         KeyCode::Char('/') => {
                             app.is_searching = true;
                             app.search_query.clear();

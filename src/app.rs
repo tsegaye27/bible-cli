@@ -230,4 +230,13 @@ impl App {
             Vec::new()
         }
     }
+
+    pub fn get_selected_verse(&self) -> Option<String> {
+        let verses = self.get_flattened_verses();
+        let i = self.verses_state.selected()?;
+        let (n, t) = verses.get(i)?;
+        let book_name = self.current_book.as_ref().map(|b| b.book_name_am.clone()).unwrap_or_default();
+        let chapter = self.get_current_chapter().map(|c| c.chapter).unwrap_or(0);
+        Some(format!("{} {}:{} - {}", book_name, chapter, n, t))
+    }
 }

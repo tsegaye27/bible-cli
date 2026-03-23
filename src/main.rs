@@ -14,6 +14,12 @@ use arboard::Clipboard;
 use crate::app::{App, Pane};
 
 fn main() -> Result<()> {
+    let args: Vec<String> = std::env::args().collect();
+    if args.contains(&"--version".to_string()) || args.contains(&"-v".to_string()) {
+        println!("bible-cli version {}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;

@@ -37,6 +37,18 @@ To see Amharic characters correctly, you **must** use a terminal font that suppo
 - **Linux (Gnome Terminal)**: Preferences > Profiles > Text > Custom font.
 - **VS Code**: Settings > `editor.fontFamily`.
 
+### Updating
+
+To update to the latest version, simply re-run the installation command:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/tsegaye27/bible-cli/main/install.sh | bash
+```
+
+Check your current version with:
+```bash
+bible-cli --version
+```
 
 ### Setup
 

@@ -9,11 +9,41 @@ echo "----------------------------------------"
 echo "  Installing Bible CLI (Amharic)        "
 echo "----------------------------------------"
 
-# 1. Download the latest binary
-echo "Checking for latest release..."
-DOWNLOAD_URL="https://github.com/$REPO/releases/latest/download/$BINARY_NAME"
+# Detect OS and Architecture
+OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
+ARCH="$(uname -m)"
 
-echo "Downloading from GitHub..."
+case "$OS" in
+    linux)
+        PLATFORM="linux"
+        ;;
+    darwin)
+        PLATFORM="macos"
+        ;;
+    *)
+        echo "Error: Unsupported operating system: $OS"
+        exit 1
+        ;;
+esac
+
+case "$ARCH" in
+    x86_64)
+        ARCH_SUFFIX="x86_64"
+        ;;
+    aarch64|arm64)
+        ARCH_SUFFIX="aarch64"
+        ;;
+    *)
+        echo "Error: Unsupported architecture: $ARCH"
+        exit 1
+        ;;
+esac
+
+# 1. Download the latest binary
+echo "Checking for latest release for $PLATFORM-$ARCH_SUFFIX..."
+DOWNLOAD_URL="https://github.com/$REPO/releases/latest/download/${BINARY_NAME}-${PLATFORM}-${ARCH_SUFFIX}"
+
+echo "Downloading from GitHub: $DOWNLOAD_URL"
 if curl -L "$DOWNLOAD_URL" -o "$BINARY_NAME"; then
     echo "Download successful."
 else
@@ -31,8 +61,16 @@ if sudo mv "$BINARY_NAME" "$INSTALL_PATH"; then
     echo "Successfully installed Bible CLI!"
     echo "You can now run it by typing: $BINARY_NAME"
     echo "----------------------------------------"
-    echo "Note: For Amharic characters, ensure your terminal font"
-    echo "is set to 'Noto Sans Ethiopic' or similar."
+    echo "Font Recommendations for Amharic:"
+    echo "----------------------------------------"
+    echo "1. Abyssinica SIL (Highly Recommended)"
+    echo "2. Noto Sans Ethiopic"
+    echo "3. Kawsar"
+    echo "4. FiraGO"
+    echo ""
+    echo "Make sure to set your terminal font to one of these"
+    echo "to see Amharic characters correctly."
+    echo "----------------------------------------"
 else
     echo "Error: Failed to move binary to $INSTALL_PATH."
     exit 1

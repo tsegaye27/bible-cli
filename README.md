@@ -8,19 +8,35 @@ A modern, high-performance Bible reading terminal application with a Yazi-inspir
 - **Search**: Real-time filtering for books and chapters using `/`.
 - **Vim-like Navigation**: Use `h`, `j`, `k`, `l` or arrow keys to navigate.
 - **Modern TUI**: Smooth, rounded borders and a refined dark theme.
-- **Amharic Support**: Full support for Ethiopic characters (requires a compatible terminal font).
-
-## Credits
-
-This project uses the Bible data provided by the **80-weahadu** project.
-Special thanks to the [EOTCOpenSource/80-weahadu](https://github.com/EOTCOpenSource/80-weahadu) repository for the comprehensive JSON-formatted Amharic Bible data.
+- **Amharic Support**: Full support for Ethiopic characters.
+- **Cross-Platform**: Support for Linux (x86_64, aarch64) and macOS (Intel & Apple Silicon).
 
 ## Installation
 
+### Quick Install (Linux & macOS)
+
+Run the following command in your terminal:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/tsegaye27/bible-cli/main/install.sh | bash
+```
+
 ### Prerequisites
 
-- [Rust and Cargo](https://rustup.rs/) installed.
-- A terminal font that supports Ethiopic characters (e.g., **Noto Sans Ethiopic**).
+To see Amharic characters correctly, you **must** use a terminal font that supports Ethiopic characters.
+
+**Recommended Fonts:**
+1. **[Abyssinica SIL](https://software.sil.org/abyssinica/)** (Highly Recommended)
+2. **Noto Sans Ethiopic** (Standard)
+3. **Kawsar** (Clear and modern)
+4. **FiraGO** (Excellent multi-script support)
+
+#### How to change terminal font:
+- **macOS (Terminal.app)**: Settings > Profiles > Text > Font.
+- **macOS (iTerm2)**: Settings > Profiles > Text > Font.
+- **Linux (Gnome Terminal)**: Preferences > Profiles > Text > Custom font.
+- **VS Code**: Settings > `editor.fontFamily`.
+
 
 ### Setup
 

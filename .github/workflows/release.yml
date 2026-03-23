@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: Build and Release
+    name: Build
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -50,15 +50,35 @@ jobs:
           fi
           cargo build --release --target ${{ matrix.target }}
 
-      - name: Prepare binary for upload
+      - name: Prepare binary
         run: |
           mkdir -p staging
           cp target/${{ matrix.target }}/release/bible-cli staging/bible-cli-${{ matrix.suffix }}
 
-      - name: Release
-        uses: softprops/action-gh-release@v1
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
-          files: staging/bible-cli-${{ matrix.suffix }}
+          name: bible-cli-${{ matrix.suffix }}
+          path: staging/bible-cli-${{ matrix.suffix }}
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: bible-cli-*
+          merge-multiple: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

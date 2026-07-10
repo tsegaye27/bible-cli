@@ -35,7 +35,9 @@ If you get an execution policy error, run this instead:
 powershell -NoProfile -ExecutionPolicy Bypass -Command "irm 'https://raw.githubusercontent.com/tsegaye27/bible-cli/main/install.ps1' | iex"
 ```
 
-**WSL / Git Bash on Windows:** use the Linux install command above.
+**Git Bash on Windows:** the Linux/macOS install command above also works (it installs the Windows `.exe`).
+
+**WSL on Windows:** use the Linux/macOS install command above.
 
 ### Prerequisites
 

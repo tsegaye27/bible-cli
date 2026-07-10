@@ -40,6 +40,15 @@ pub struct BookMetadata {
     pub file_path: String,
 }
 
+#[derive(Debug, Clone)]
+pub struct Quote {
+    pub book_name_am: String,
+    pub book_name_en: String,
+    pub chapter: u32,
+    pub verse: u32,
+    pub text: String,
+}
+
 pub fn load_books_metadata() -> Result<Vec<BookMetadata>> {
     let mut books = Vec::new();
     
@@ -74,4 +83,48 @@ pub fn load_book(file_path: &str) -> Result<Book> {
     
     let book: Book = serde_json::from_str(content)?;
     Ok(book)
+}
+
+pub fn random_quote() -> Result<Quote> {
+    let books_meta = load_books_metadata()?;
+    let mut verses: Vec<Quote> = Vec::new();
+
+    for meta in &books_meta {
+        let book = load_book(&meta.file_path)?;
+        for chapter in &book.chapters {
+            for section in &chapter.sections {
+                for v in &section.verses {
+                    verses.push(Quote {
+                        book_name_am: book.book_name_am.clone(),
+                        book_name_en: book.book_name_en.clone(),
+                        chapter: chapter.chapter,
+                        verse: v.verse,
+                        text: v.text.clone(),
+                    });
+                }
+            }
+        }
+    }
+
+    if verses.is_empty() {
+        return Err(anyhow!("No verses found"));
+    }
+
+    let idx = random_index(verses.len());
+    Ok(verses.swap_remove(idx))
+}
+
+fn random_index(len: usize) -> usize {
+    use std::hash::{Hash, Hasher};
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_nanos()
+        .hash(&mut hasher);
+    std::process::id().hash(&mut hasher);
+
+    (hasher.finish() as usize) % len
 }

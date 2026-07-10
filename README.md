@@ -69,6 +69,13 @@ Check your current version with:
 bible-cli --version
 ```
 
+Print a random verse:
+```bash
+bible-cli --quote
+# or
+bible-cli -q
+```
+
 ### Setup
 
 1. Clone this repository.

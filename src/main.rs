@@ -19,6 +19,16 @@ fn main() -> Result<()> {
         println!("bible-cli version {}", env!("CARGO_PKG_VERSION"));
         return Ok(());
     }
+    if args.contains(&"--quote".to_string()) || args.contains(&"-q".to_string()) {
+        let quote = data::random_quote()?;
+        println!("{}", quote.text);
+        println!();
+        println!(
+            "— {} ({}) {}:{}",
+            quote.book_name_am, quote.book_name_en, quote.chapter, quote.verse
+        );
+        return Ok(());
+    }
 
     enable_raw_mode()?;
     let mut stdout = io::stdout();

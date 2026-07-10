@@ -24,6 +24,12 @@ jobs:
           - os: macos-latest
             target: aarch64-apple-darwin
             suffix: macos-aarch64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            suffix: windows-x86_64
+          - os: windows-latest
+            target: aarch64-pc-windows-msvc
+            suffix: windows-aarch64
 
     steps:
       - name: Checkout code
@@ -44,22 +50,31 @@ jobs:
           fi
 
       - name: Build release binary
+        shell: bash
         run: |
           if [ "${{ matrix.target }}" = "aarch64-unknown-linux-musl" ]; then
             export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-gnu-gcc
           fi
           cargo build --release --target ${{ matrix.target }}
 
-      - name: Prepare binary
+      - name: Prepare binary (Unix)
+        if: runner.os != 'Windows'
         run: |
           mkdir -p staging
           cp target/${{ matrix.target }}/release/bible-cli staging/bible-cli-${{ matrix.suffix }}
+
+      - name: Prepare binary (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path staging | Out-Null
+          Copy-Item "target/${{ matrix.target }}/release/bible-cli.exe" "staging/bible-cli-${{ matrix.suffix }}.exe"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: bible-cli-${{ matrix.suffix }}
-          path: staging/bible-cli-${{ matrix.suffix }}
+          path: staging/*
 
   release:
     name: Create Release

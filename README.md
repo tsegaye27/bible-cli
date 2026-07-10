@@ -9,7 +9,7 @@ A modern, high-performance Bible reading terminal application with a Yazi-inspir
 - **Vim-like Navigation**: Use `h`, `j`, `k`, `l` or arrow keys to navigate.
 - **Modern TUI**: Smooth, rounded borders and a refined dark theme.
 - **Amharic Support**: Full support for Ethiopic characters.
-- **Cross-Platform**: Support for Linux (x86_64, aarch64) and macOS (Intel & Apple Silicon).
+- **Cross-Platform**: Support for Linux (x86_64, aarch64), macOS (Intel & Apple Silicon), and Windows (x86_64, ARM64).
 
 ## Installation
 
@@ -20,6 +20,22 @@ Run the following command in your terminal:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/tsegaye27/bible-cli/main/install.sh | bash
 ```
+
+### Quick Install (Windows)
+
+Run this in **PowerShell** (not Command Prompt):
+
+```powershell
+irm https://raw.githubusercontent.com/tsegaye27/bible-cli/main/install.ps1 | iex
+```
+
+If you get an execution policy error, run this instead:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -Command "irm 'https://raw.githubusercontent.com/tsegaye27/bible-cli/main/install.ps1' | iex"
+```
+
+**WSL / Git Bash on Windows:** use the Linux install command above.
 
 ### Prerequisites
 
@@ -36,6 +52,7 @@ To see Amharic characters correctly, you **must** use a terminal font that suppo
 - **macOS (iTerm2)**: Settings > Profiles > Text > Font.
 - **Linux (Gnome Terminal)**: Preferences > Profiles > Text > Custom font.
 - **VS Code**: Settings > `editor.fontFamily`.
+- **Windows Terminal**: Settings > Profiles > Appearance > Font face.
 
 ### Updating
 

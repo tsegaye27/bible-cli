@@ -76,12 +76,23 @@ bible-cli --quote
 bible-cli -q
 ```
 
+See all the options:
+```bash
+bible-cli --help
+```
+
 ### Setup
 
 1. Clone this repository.
 2. Run the application:
    ```bash
    cargo run --release
+   ```
+3. Run the checks (the same ones CI runs):
+   ```bash
+   cargo fmt --all -- --check
+   cargo clippy --all-targets -- -D warnings
+   cargo test
    ```
 
 ## Keybindings
@@ -90,7 +101,7 @@ bible-cli -q
 - `k` / `Up`: Move up in list / scroll up.
 - `h` / `Left`: Move focus to the left pane.
 - `l` / `Right` / `Enter`: Move focus to the right pane / select.
-- `/`: Enter search mode (filters current pane).
+- `/`: Enter search mode (filters current pane). Books match on their Amharic name, their English name (case-insensitive, e.g. `psal` or `Psa`), or their number.
 - `Esc`: Exit search mode and clear filter.
 - `Enter`: (In search mode) Confirm selection and exit search.
 - `g` / `Home`: Jump to top.

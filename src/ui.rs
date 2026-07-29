@@ -1,19 +1,19 @@
+use crate::app::{App, Pane};
 use ratatui::{
+    Frame,
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, List, ListItem, Paragraph, BorderType},
-    Frame,
+    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph},
 };
-use crate::app::{App, Pane};
-use textwrap::{wrap, Options};
+use textwrap::{Options, wrap};
 
 pub fn render(frame: &mut Frame, app: &mut App) {
     let main_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Min(0),      // Content
+            Constraint::Min(0),                                       // Content
             Constraint::Length(if app.is_searching { 1 } else { 0 }), // Search input
-            Constraint::Length(1),    // Status bar
+            Constraint::Length(1),                                    // Status bar
         ])
         .split(frame.area());
 
@@ -27,7 +27,9 @@ pub fn render(frame: &mut Frame, app: &mut App) {
         .split(main_layout[0]);
 
     // Themes
-    let active_border_style = Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD);
+    let active_border_style = Style::default()
+        .fg(Color::Cyan)
+        .add_modifier(Modifier::BOLD);
     let inactive_border_style = Style::default().fg(Color::DarkGray);
     let highlight_style = Style::default()
         .bg(Color::Rgb(40, 44, 52))
@@ -36,7 +38,8 @@ pub fn render(frame: &mut Frame, app: &mut App) {
 
     // --- Books Pane ---
     let filtered_books = app.filtered_books();
-    let books: Vec<ListItem> = filtered_books.iter()
+    let books: Vec<ListItem> = filtered_books
+        .iter()
         .map(|b| {
             ListItem::new(format!(" {:02} {}", b.number, b.name_am))
                 .style(Style::default().fg(Color::Rgb(171, 178, 191)))
@@ -61,7 +64,8 @@ pub fn render(frame: &mut Frame, app: &mut App) {
 
     // --- Chapters Pane ---
     let filtered_chapters = app.filtered_chapters();
-    let chapters: Vec<ListItem> = filtered_chapters.iter()
+    let chapters: Vec<ListItem> = filtered_chapters
+        .iter()
         .map(|c| {
             ListItem::new(format!(" ምዕራፍ {}", c))
                 .style(Style::default().fg(Color::Rgb(171, 178, 191)))
@@ -87,14 +91,14 @@ pub fn render(frame: &mut Frame, app: &mut App) {
     // --- Verses Pane ---
     let filtered_verses = app.filtered_verses();
     let verses_pane_width = content_chunks[2].width.saturating_sub(4) as usize;
-    
-    let verses: Vec<ListItem> = filtered_verses.iter()
+
+    let verses: Vec<ListItem> = filtered_verses
+        .iter()
         .map(|(n, t)| {
             let full_text = format!("{}. {}", n, t);
             let wrapped_lines = wrap(&full_text, Options::new(verses_pane_width));
             let joined_text = wrapped_lines.join("\n") + "\n";
-            ListItem::new(joined_text)
-                .style(Style::default().fg(Color::Rgb(240, 240, 240)))
+            ListItem::new(joined_text).style(Style::default().fg(Color::Rgb(240, 240, 240)))
         })
         .collect();
 
@@ -123,29 +127,43 @@ pub fn render(frame: &mut Frame, app: &mut App) {
             Pane::Verses => "ፈልግ (ቁጥሮች)",
         };
         let search_text = format!(" {} > /{}", title, app.search_query);
-        let search_bar = Paragraph::new(search_text)
-            .style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD));
+        let search_bar = Paragraph::new(search_text).style(
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        );
         frame.render_widget(search_bar, main_layout[1]);
     }
 
     // --- Status Bar ---
-    let current_book_name = app.current_book.as_ref()
+    let current_book_name = app
+        .current_book
+        .as_ref()
         .map(|b| b.book_name_am.clone())
         .unwrap_or_else(|| "...".to_string());
-    
-    let current_chapter = if let Some(_) = &app.current_book {
+
+    let current_chapter = if app.current_book.is_some() {
         let filtered_chapters = app.filtered_chapters();
-        app.chapters_state.selected()
+        app.chapters_state
+            .selected()
             .and_then(|i| filtered_chapters.get(i))
             .cloned()
             .unwrap_or(0)
-    } else { 0 };
+    } else {
+        0
+    };
 
     let status_text = format!(
         " [q: Quit] [/: Search] [h/j/k/l: Nav] | {} - ምዕራፍ {}",
         current_book_name, current_chapter
     );
-    let status_bar = Paragraph::new(status_text)
-        .style(Style::default().bg(Color::Rgb(33, 37, 43)).fg(Color::DarkGray));
-    frame.render_widget(status_bar, main_layout[if app.is_searching { 2 } else { 1 }]);
+    let status_bar = Paragraph::new(status_text).style(
+        Style::default()
+            .bg(Color::Rgb(33, 37, 43))
+            .fg(Color::DarkGray),
+    );
+    frame.render_widget(
+        status_bar,
+        main_layout[if app.is_searching { 2 } else { 1 }],
+    );
 }

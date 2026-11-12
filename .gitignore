@@ -1,1 +1,4 @@
 /target
+/dist
+.scratch/
+.DS_Store

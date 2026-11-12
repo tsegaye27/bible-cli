@@ -100,13 +100,42 @@ bible-cli --help
 - `j` / `Down`: Move down in list / scroll text.
 - `k` / `Up`: Move up in list / scroll up.
 - `h` / `Left`: Move focus to the left pane.
-- `l` / `Right` / `Enter`: Move focus to the right pane / select.
-- `/`: Enter search mode (filters current pane). Books match on their Amharic name, their English name (case-insensitive, e.g. `psal` or `Psa`), or their number.
+- `l` / `Right` / `Enter`: Move focus to the right pane / select. In the verses pane, `Enter` copies the verse (the status bar confirms it).
+- `/`: Filter the current pane. Books match on their Amharic name, their English name (case-insensitive, e.g. `psal` or `Psa`), or their number.
+- `f`: Search the whole Bible. Type a word, press `Enter`, then pick a result to jump to it.
+- `m`: Bookmark the selected verse (press again to remove). Bookmarked verses show a `★`.
+- `b`: List bookmarks. `Enter` jumps, `d` deletes, `Esc` closes.
 - `Esc`: Exit search mode and clear filter.
-- `Enter`: (In search mode) Confirm selection and exit search.
 - `g` / `Home`: Jump to top.
 - `G` / `End`: Jump to bottom.
 - `q` / `Esc`: Quit or exit search.
+
+The reader reopens where you left off.
+
+## Configuration
+
+Bible CLI keeps two files in its config directory:
+
+- macOS / Linux: `~/.config/bible-cli/` (or `$XDG_CONFIG_HOME/bible-cli/`)
+- Windows: `%APPDATA%\bible-cli\`
+
+`state.json` holds your last position and bookmarks; the app writes it. `config.json` is yours to create, to change the colors:
+
+```json
+{
+  "theme": {
+    "accent": "magenta",
+    "muted": "darkgray",
+    "text": "#abb2bf",
+    "verse": "#f0f0f0",
+    "highlight_bg": "#282c34",
+    "status_bg": "#21252b",
+    "search": "yellow"
+  }
+}
+```
+
+Every key is optional. Values are color names, `#rrggbb` hex codes, or 256-color indexes. If the file has a typo, the app opens with the default colors and shows the error in the status bar.
 
 ## Deployment
 

@@ -10,6 +10,9 @@ const AM_DIR: &str = "am";
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Verse {
     pub verse: u32,
+    /// Last verse of a range such as 15-16, where the source joins verses.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub verse_end: Option<u32>,
     pub text: String,
 }
 
@@ -23,6 +26,9 @@ pub struct Section {
 pub struct Chapter {
     pub chapter: u32,
     pub sections: Vec<Section>,
+    /// Footnotes printed at the end of the chapter.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub notes: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -115,6 +121,11 @@ pub fn load_book(file_path: &str) -> Result<Book> {
 
     let book: Book = serde_json::from_str(content)?;
     Ok(book)
+}
+
+/// Parse every book in `metadata`, for searches that span the whole Bible.
+pub fn load_all_books(metadata: &[BookMetadata]) -> Result<Vec<Book>> {
+    metadata.iter().map(|m| load_book(&m.file_path)).collect()
 }
 
 /// Pick a verse at random from the whole Bible.

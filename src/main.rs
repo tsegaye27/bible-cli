@@ -1,6 +1,8 @@
 mod app;
 mod cli;
 mod data;
+mod store;
+mod theme;
 mod ui;
 
 use anyhow::Result;
@@ -17,6 +19,7 @@ use std::process::ExitCode;
 
 use crate::app::{App, Pane};
 use crate::cli::Command;
+use crate::theme::Theme;
 
 fn main() -> ExitCode {
     let command = match cli::parse(std::env::args().skip(1)) {
@@ -109,22 +112,81 @@ fn run_tui() -> Result<()> {
     let mut app = App::new(books_metadata);
     app.load_current_book_filtered()?;
 
-    run_app(&mut terminal, &mut app)
+    let state = store::load_state();
+    app.bookmarks = state.bookmarks;
+    if let Some(last) = state.last {
+        app.jump_to(last).ok();
+    }
+
+    let (theme, theme_error) = theme::load();
+    app.status = theme_error;
+
+    let result = run_app(&mut terminal, &mut app, &theme);
+    save(&app);
+    result
 }
 
-fn run_app<B: ratatui::backend::Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<()>
+/// Best effort: a read-only home directory shouldn't turn quitting into an error.
+fn save(app: &App) {
+    let state = store::State {
+        last: app.current_location(),
+        bookmarks: app.bookmarks.clone(),
+    };
+    store::save_state(&state).ok();
+}
+
+fn run_app<B: ratatui::backend::Backend>(
+    terminal: &mut Terminal<B>,
+    app: &mut App,
+    theme: &Theme,
+) -> Result<()>
 where
     B::Error: std::error::Error + Send + Sync + 'static,
 {
     let mut clipboard = Clipboard::new().ok();
 
     loop {
-        terminal.draw(|f| ui::render(f, app))?;
+        terminal.draw(|f| ui::render(f, app, theme))?;
 
         if let Event::Key(key) = event::read()?
             && key.kind == KeyEventKind::Press
         {
-            if app.is_searching {
+            app.status = None;
+            if app.popup.is_some() {
+                match key.code {
+                    KeyCode::Char('j') | KeyCode::Down => app.popup_move(true),
+                    KeyCode::Char('k') | KeyCode::Up => app.popup_move(false),
+                    KeyCode::Enter | KeyCode::Char('l') => app.popup_accept()?,
+                    KeyCode::Char('d') | KeyCode::Delete => {
+                        if app.popup_delete() {
+                            save(app);
+                        }
+                    }
+                    KeyCode::Esc | KeyCode::Char('q') => app.popup = None,
+                    _ => {}
+                }
+            } else if app.is_searching && app.search_everywhere {
+                match key.code {
+                    KeyCode::Enter => {
+                        let query = std::mem::take(&mut app.search_query);
+                        app.is_searching = false;
+                        app.search_everywhere = false;
+                        if !query.is_empty() {
+                            app.search_everywhere(&query)?;
+                        }
+                    }
+                    KeyCode::Esc => {
+                        app.is_searching = false;
+                        app.search_everywhere = false;
+                        app.search_query.clear();
+                    }
+                    KeyCode::Backspace => {
+                        app.search_query.pop();
+                    }
+                    KeyCode::Char(c) => app.search_query.push(c),
+                    _ => {}
+                }
+            } else if app.is_searching {
                 match key.code {
                     KeyCode::Enter => {
                         app.commit_search();
@@ -151,11 +213,7 @@ where
                     KeyCode::Char('h') | KeyCode::Left => app.previous_pane(),
                     KeyCode::Char('l') | KeyCode::Right | KeyCode::Enter => {
                         if app.active_pane == Pane::Verses {
-                            if let (Some(cb), Some(text)) =
-                                (&mut clipboard, app.get_selected_verse())
-                            {
-                                cb.set_text(text).ok();
-                            }
+                            app.status = Some(copy_verse(&mut clipboard, app));
                         } else {
                             app.next_pane();
                         }
@@ -164,6 +222,17 @@ where
                         app.is_searching = true;
                         app.search_query.clear();
                     }
+                    KeyCode::Char('f') => {
+                        app.is_searching = true;
+                        app.search_everywhere = true;
+                        app.search_query.clear();
+                    }
+                    KeyCode::Char('m') => {
+                        if app.toggle_bookmark() {
+                            save(app);
+                        }
+                    }
+                    KeyCode::Char('b') => app.open_bookmarks()?,
                     KeyCode::Char('g') | KeyCode::Home => match app.active_pane {
                         Pane::Books => {
                             app.books_state.select(Some(0));
@@ -191,6 +260,16 @@ where
                 }
             }
         }
+    }
+}
+
+fn copy_verse(clipboard: &mut Option<Clipboard>, app: &App) -> String {
+    let Some(text) = app.get_selected_verse() else {
+        return "No verse selected".to_string();
+    };
+    match clipboard.as_mut().map(|cb| cb.set_text(text)) {
+        Some(Ok(())) => "ተቀድቷል — verse copied to the clipboard".to_string(),
+        _ => "Could not copy: no clipboard available".to_string(),
     }
 }
 

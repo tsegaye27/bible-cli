@@ -21,7 +21,10 @@ pub const HELP: &str = concat!(
     "KEYS (in the reader):\n",
     "    h/j/k/l, arrows  Move between panes and items\n",
     "    Enter, l         Open the next pane; copy the verse in the verses pane\n",
-    "    /                Search the active pane\n",
+    "    /                Filter the active pane\n",
+    "    f                Search the whole Bible\n",
+    "    m                Bookmark the selected verse (again to remove)\n",
+    "    b                List bookmarks (d deletes one)\n",
     "    g / G            Jump to the first / last item\n",
     "    q, Esc           Quit\n",
 );

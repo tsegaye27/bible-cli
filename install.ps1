@@ -45,19 +45,47 @@ if ($UserPath -notlike "*$InstallDir*") {
     Write-Host "Added $InstallDir to your user PATH."
 }
 
+# Hibur Mono: a monospaced Ethiopic font (SIL Open Font License 1.1), so
+# Amharic letters fit the terminal grid instead of overlapping.
+# Set BIBLE_CLI_NO_FONT=1 to skip.
+$FontInstalled = $false
+if ($env:BIBLE_CLI_NO_FONT -ne "1") {
+    try {
+        $FontDir = Join-Path $env:LOCALAPPDATA "Microsoft\Windows\Fonts"
+        New-Item -ItemType Directory -Force -Path $FontDir | Out-Null
+        $FontPath = Join-Path $FontDir "HiburMono-Regular.ttf"
+        Write-Host "Downloading the Hibur Mono font for Amharic..."
+        Invoke-WebRequest -Uri "https://raw.githubusercontent.com/google/fonts/main/ofl/hiburmono/HiburMono-Regular.ttf" -OutFile $FontPath -UseBasicParsing
+        # Per-user registration: no admin rights needed (Windows 10 1809+).
+        New-ItemProperty -Force -Path "HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Fonts" -Name "Hibur Mono Regular (TrueType)" -Value $FontPath | Out-Null
+        $FontInstalled = $true
+    }
+    catch {
+        Write-Warning "Could not install the font. Bible CLI still works; see the font notes below."
+    }
+}
+
 Write-Host "----------------------------------------"
 Write-Host "Successfully installed Bible CLI!"
 Write-Host "You can now run it by typing: $BinaryName"
 Write-Host "----------------------------------------"
-Write-Host "Font Recommendations for Amharic:"
-Write-Host "----------------------------------------"
-Write-Host "1. Abyssinica SIL (Highly Recommended)"
-Write-Host "2. Noto Sans Ethiopic"
-Write-Host "3. Kawsar"
-Write-Host "4. FiraGO"
-Write-Host ""
-Write-Host "Set your terminal font to one of these"
-Write-Host "to see Amharic characters correctly."
+if ($FontInstalled) {
+    Write-Host "Installed the Hibur Mono font for Amharic."
+    if ($env:WT_SESSION) {
+        Write-Host "Windows Terminal: Settings > your profile > Appearance > Font face,"
+        Write-Host "enter: Cascadia Mono, Hibur Mono"
+    } else {
+        Write-Host "For Amharic, use Windows Terminal (free in the Microsoft Store)."
+        Write-Host "The old console window cannot show Amharic letters properly."
+        Write-Host "Then: Settings > your profile > Appearance > Font face,"
+        Write-Host "enter: Cascadia Mono, Hibur Mono"
+    }
+} else {
+    Write-Host "For Amharic, install the monospaced Hibur Mono font:"
+    Write-Host "  https://fonts.google.com/specimen/Hibur+Mono"
+    Write-Host "then follow the font steps in the README:"
+    Write-Host "  https://github.com/$Repo#fonts-for-amharic"
+}
 Write-Host "----------------------------------------"
 Write-Host ""
 Write-Host "Note: Open a new terminal window if $BinaryName is not found."

@@ -70,14 +70,21 @@ Write-Host "Successfully installed Bible CLI!"
 Write-Host "You can now run it by typing: $BinaryName"
 Write-Host "----------------------------------------"
 if ($FontInstalled) {
-    Write-Host "Installed the Hibur Mono font."
-    Write-Host "In Windows Terminal: Settings > Profiles > Appearance > Font face,"
-    Write-Host "choose 'Hibur Mono' so Amharic letters line up without overlapping."
+    Write-Host "Installed the Hibur Mono font for Amharic."
+    if ($env:WT_SESSION) {
+        Write-Host "Windows Terminal: Settings > your profile > Appearance > Font face,"
+        Write-Host "enter: Cascadia Mono, Hibur Mono"
+    } else {
+        Write-Host "For Amharic, use Windows Terminal (free in the Microsoft Store)."
+        Write-Host "The old console window cannot show Amharic letters properly."
+        Write-Host "Then: Settings > your profile > Appearance > Font face,"
+        Write-Host "enter: Cascadia Mono, Hibur Mono"
+    }
 } else {
-    Write-Host "For Amharic, set your terminal font to one that covers"
-    Write-Host "Ethiopic, ideally the monospaced Hibur Mono:"
+    Write-Host "For Amharic, install the monospaced Hibur Mono font:"
     Write-Host "  https://fonts.google.com/specimen/Hibur+Mono"
-    Write-Host "Other options: Noto Sans Ethiopic, Abyssinica SIL."
+    Write-Host "then follow the font steps in the README:"
+    Write-Host "  https://github.com/$Repo#fonts-for-amharic"
 }
 Write-Host "----------------------------------------"
 Write-Host ""

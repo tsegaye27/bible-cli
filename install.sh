@@ -117,21 +117,85 @@ install_font() {
     FONT_INSTALLED=1
 }
 
+# Unicode ranges for Ethiopic, Ethiopic Supplement and Ethiopic Extended(-A).
+ETHIOPIC_RANGES="U+1200-U+139F,U+2D80-U+2DDF,U+AB00-U+AB2F"
+PROFILE_URL="https://raw.githubusercontent.com/$REPO/main/assets/Bible.terminal"
+
+# Which terminal is this? Ghostty and kitty set their own variables, which
+# survive inside tmux; TERM_PROGRAM covers the rest.
+detect_terminal() {
+    if [ -n "${KITTY_WINDOW_ID:-}" ]; then echo kitty
+    elif [ -n "${GHOSTTY_RESOURCES_DIR:-}" ]; then echo ghostty
+    elif [ -n "${WT_SESSION:-}" ]; then echo windows-terminal
+    else
+        case "${TERM_PROGRAM:-}" in
+            Apple_Terminal) echo terminal-app ;;
+            iTerm.app) echo iterm ;;
+            WezTerm) echo wezterm ;;
+            *) echo unknown ;;
+        esac
+    fi
+}
+
+# Terminal.app has one font per profile, so add a separate "Bible" profile
+# instead of changing the user's own. Opening the file imports it.
+install_terminal_profile() {
+    local profile="${TMPDIR:-/tmp}/Bible.terminal"
+    curl -fsSL "$PROFILE_URL" -o "$profile" && open "$profile"
+}
+
+print_font_help() {
+    if [ "$FONT_INSTALLED" != "1" ]; then
+        echo "For Amharic, install the monospaced Hibur Mono font:"
+        echo "  https://fonts.google.com/specimen/Hibur+Mono"
+        echo "then follow the font steps in the README:"
+        echo "  https://github.com/$REPO#fonts-for-amharic"
+        return
+    fi
+    echo "Installed the Hibur Mono font for Amharic."
+    case "$(detect_terminal)" in
+        ghostty)
+            echo "Ghostty: add this line to ~/.config/ghostty/config, then restart Ghostty:"
+            echo "  font-codepoint-map = $ETHIOPIC_RANGES=Hibur Mono"
+            ;;
+        kitty)
+            echo "kitty: add this line to ~/.config/kitty/kitty.conf, then restart kitty:"
+            echo "  symbol_map $ETHIOPIC_RANGES Hibur Mono"
+            ;;
+        iterm)
+            echo "iTerm2: Settings > Profiles > Text > tick 'Use a different font"
+            echo "for non-ASCII text' and choose Hibur Mono."
+            ;;
+        wezterm)
+            echo "WezTerm: in ~/.wezterm.lua, set"
+            echo "  config.font = wezterm.font_with_fallback { 'JetBrains Mono', 'Hibur Mono' }"
+            ;;
+        windows-terminal)
+            echo "Windows Terminal: Settings > your profile > Appearance > Font face,"
+            echo "enter: Cascadia Mono, Hibur Mono"
+            ;;
+        terminal-app)
+            if install_terminal_profile; then
+                echo "Terminal.app: added a 'Bible' profile that uses Hibur Mono and"
+                echo "opened a window with it. Read in that window (Shell > New Window > Bible);"
+                echo "your usual profile is unchanged."
+            else
+                echo "Terminal.app: Settings > Profiles > Text > Font, choose Hibur Mono."
+            fi
+            ;;
+        *)
+            echo "Point your terminal at Hibur Mono for Amharic; steps for each terminal:"
+            echo "  https://github.com/$REPO#fonts-for-amharic"
+            ;;
+    esac
+}
+
 print_success() {
     echo "----------------------------------------"
     echo "Successfully installed Bible CLI!"
     echo "You can now run it by typing: $BINARY_NAME"
     echo "----------------------------------------"
-    if [ "$FONT_INSTALLED" = "1" ]; then
-        echo "Installed the Hibur Mono font."
-        echo "Set your terminal font to \"Hibur Mono\" so Amharic"
-        echo "letters line up without overlapping."
-    else
-        echo "For Amharic, set your terminal font to one that"
-        echo "covers Ethiopic, ideally the monospaced Hibur Mono:"
-        echo "  https://fonts.google.com/specimen/Hibur+Mono"
-        echo "Other options: Noto Sans Ethiopic, Abyssinica SIL."
-    fi
+    print_font_help
     echo "----------------------------------------"
 }
 

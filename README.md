@@ -39,20 +39,24 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "irm 'https://raw.githubu
 
 **WSL on Windows:** use the Linux/macOS install command above.
 
-### Prerequisites
+### Fonts for Amharic
 
-To see Amharic characters correctly, you **must** use a terminal font that supports Ethiopic characters.
+Most terminal fonts have no Amharic letters, so the terminal borrows them from a proportional font, and they overlap. The installers add **[Hibur Mono](https://fonts.google.com/specimen/Hibur+Mono)** (SIL Open Font License 1.1), a monospaced font whose Ethiopic letters each fit one terminal cell. To skip it, run the installer with `BIBLE_CLI_NO_FONT=1`.
 
-The installers download and install **[Hibur Mono](https://fonts.google.com/specimen/Hibur+Mono)** for you (SIL Open Font License 1.1). It is monospaced, with Ethiopic letters designed to fit the terminal grid, so they don't overlap the way proportional Ethiopic fonts do. Set it as your terminal font after installing. To skip the font, run the installer with `BIBLE_CLI_NO_FONT=1`.
+A program can't choose its terminal's font, so point your terminal at Hibur Mono. Where the terminal allows it, use Hibur Mono only for Amharic and keep your usual font for everything else. The installer prints the step for the terminal it runs in.
 
-Other fonts that cover Ethiopic, though they are not monospaced and may overlap: **[Abyssinica SIL](https://software.sil.org/abyssinica/)**, **Noto Sans Ethiopic**.
+| Terminal | Setting |
+|---|---|
+| Ghostty | Add to `~/.config/ghostty/config`: `font-codepoint-map = U+1200-U+139F,U+2D80-U+2DDF,U+AB00-U+AB2F=Hibur Mono` |
+| kitty | Add to `~/.config/kitty/kitty.conf`: `symbol_map U+1200-U+139F,U+2D80-U+2DDF,U+AB00-U+AB2F Hibur Mono` |
+| iTerm2 | Settings > Profiles > Text > tick "Use a different font for non-ASCII text", choose Hibur Mono |
+| WezTerm | `config.font = wezterm.font_with_fallback { 'JetBrains Mono', 'Hibur Mono' }` |
+| Windows Terminal | Settings > your profile > Appearance > Font face: `Cascadia Mono, Hibur Mono` |
+| VS Code terminal | `"terminal.integrated.fontFamily": "'JetBrains Mono', 'Hibur Mono'"` |
+| macOS Terminal.app | One font per profile, so the installer adds a separate **Bible** profile that uses Hibur Mono. Read in a window with it (Shell > New Window > Bible). To add it by hand, download [`assets/Bible.terminal`](assets/Bible.terminal) and open it. |
+| GNOME Terminal | One font per profile: make a profile with Hibur Mono under Preferences > Profiles > Text > Custom font. |
 
-#### How to change terminal font:
-- **macOS (Terminal.app)**: Settings > Profiles > Text > Font.
-- **macOS (iTerm2)**: Settings > Profiles > Text > Font.
-- **Linux (Gnome Terminal)**: Preferences > Profiles > Text > Custom font.
-- **VS Code**: Settings > `editor.fontFamily`.
-- **Windows Terminal**: Settings > Profiles > Appearance > Font face.
+**Windows:** use Windows Terminal (built into Windows 11, free in the Microsoft Store for Windows 10). The old console window that `cmd` opens on Windows 10 has no font fallback and can't show Amharic properly.
 
 ### Updating
 

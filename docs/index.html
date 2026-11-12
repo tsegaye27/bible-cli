@@ -1,0 +1,1578 @@
+<!doctype html>
+<html lang="am">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Bible CLI</title>
+    <meta
+      name="description"
+      content="The Amharic 81-book Bible of the Ethiopian Orthodox Tewahedo Church, in your terminal. Free and non-commercial."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23121733'/%3E%3Ctext x='16' y='23' font-size='18' text-anchor='middle' fill='%23e2a93b'%3E%E1%8D%A9%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Abyssinica+SIL&family=Hibur+Mono&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+Ethiopic:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* Layout: a manuscript incipit page. Harag band, rubricated first verse,
+     then the live reader beside it; below, the 81-book index and the practical parts. */
+      :root {
+        --ground: #121733; /* indigo night */
+        --raised: #1a2045;
+        --rule: #2d3568;
+        --ink: #ece6d6; /* vellum light */
+        --dim: #9aa1c4;
+        --gold: #e2a93b; /* ochre, gold leaf */
+        --rubric: #e0493d; /* red ink for holy names */
+        --leaf: #3f8f6b; /* harag green */
+
+        /* the app's own default palette, for the reader demo */
+        --tty-bg: #1b1d23;
+        --tty-line: #3a3f4b;
+        --tty-text: #abb2bf;
+        --tty-verse: #f0f0f0;
+        --tty-accent: #56c8d8;
+        --tty-hl: #2c313c;
+        --tty-status: #21252b;
+        --tty-muted: #6b7280;
+
+        --f-am:
+          "Abyssinica SIL", "Noto Serif Ethiopic", "Noto Sans Ethiopic", serif;
+        --f-mono: "Hibur Mono", ui-monospace, Menlo, Consolas, monospace;
+        --f-body:
+          "IBM Plex Sans", "Noto Sans Ethiopic", system-ui, -apple-system,
+          "Segoe UI", sans-serif;
+
+        --step-0: 1rem;
+        --step-1: 1.25rem;
+        --step-2: 1.6rem;
+        --step-3: 2.4rem;
+        --step-4: clamp(1.9rem, 3.4vw, 2.75rem);
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      html {
+        background: var(--ground);
+      }
+      body {
+        margin: 0;
+        background: var(--ground);
+        color: var(--ink);
+        font: 400 var(--step-0)/1.65 var(--f-body);
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding-left: max(20px, env(safe-area-inset-left, 0px));
+        padding-right: max(20px, env(safe-area-inset-right, 0px));
+      }
+      a {
+        color: var(--gold);
+        text-underline-offset: 3px;
+      }
+      a:hover {
+        color: var(--ink);
+      }
+      :focus-visible {
+        outline: 2px solid var(--gold);
+        outline-offset: 3px;
+      }
+      h2 {
+        font: 400 var(--step-3)/1.15 var(--f-am);
+        margin: 0;
+        text-wrap: balance;
+      }
+      .label {
+        font: 400 0.78rem/1.4 var(--f-mono);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--dim);
+      }
+      code,
+      kbd {
+        font-family: var(--f-mono);
+      }
+
+      /* top bar */
+      .top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding-block: 18px;
+      }
+      .mark {
+        font: 400 1.05rem var(--f-mono);
+        color: var(--ink);
+        text-decoration: none;
+        display: flex;
+        gap: 10px;
+        align-items: baseline;
+      }
+      .mark b {
+        color: var(--gold);
+        font-weight: 400;
+      }
+      .mark small {
+        color: var(--dim);
+        font-size: 0.8rem;
+      }
+      .top nav {
+        display: flex;
+        gap: 22px;
+        font-size: 0.92rem;
+      }
+      .top nav a {
+        color: var(--dim);
+        text-decoration: none;
+      }
+      .top nav a:hover {
+        color: var(--ink);
+      }
+      @media (max-width: 640px) {
+        .top nav a:not(.gh) {
+          display: none;
+        }
+      }
+
+      /* harag: the woven band that heads an Ethiopian manuscript page */
+      .harag {
+        height: 22px;
+        border-block: 2px solid var(--leaf);
+        background: var(--ground)
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='18'%3E%3Cpath d='M0 13.5C9 13.5 9 4.5 18 4.5S27 13.5 36 13.5' fill='none' stroke='%23e0493d' stroke-width='3'/%3E%3Cpath d='M0 4.5C9 4.5 9 13.5 18 13.5S27 4.5 36 4.5' fill='none' stroke='%23121733' stroke-width='7'/%3E%3Cpath d='M0 4.5C9 4.5 9 13.5 18 13.5S27 4.5 36 4.5' fill='none' stroke='%23e2a93b' stroke-width='3'/%3E%3C/svg%3E")
+          repeat-x center / 36px 18px;
+      }
+
+      /* hero */
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.2fr);
+        gap: 56px;
+        align-items: start;
+        padding-block: 56px 72px;
+      }
+      @media (max-width: 900px) {
+        .hero {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 40px;
+          padding-block: 40px 56px;
+        }
+      }
+      .headline {
+        font: 400 var(--step-4)/1.3 var(--f-am);
+        margin: 0 0 12px;
+        text-wrap: balance;
+      }
+      .headline em {
+        font-style: normal;
+        color: var(--gold);
+      }
+      .pitch {
+        font-size: var(--step-1);
+        line-height: 1.55;
+        max-width: 34ch;
+        margin: 0 0 28px;
+        color: var(--dim);
+      }
+
+      .install {
+        border: 1px solid var(--rule);
+        border-radius: 6px;
+        background: var(--raised);
+      }
+      .install .tabs {
+        display: flex;
+        border-bottom: 1px solid var(--rule);
+      }
+      .install .tabs button {
+        font: 500 0.9rem var(--f-body);
+        color: var(--dim);
+        background: none;
+        border: 0;
+        cursor: pointer;
+        padding: 10px 16px;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+      }
+      .install .tabs button[aria-selected="true"] {
+        color: var(--ink);
+        border-bottom-color: var(--gold);
+      }
+      .cmd {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        padding: 16px;
+      }
+      .cmd code {
+        flex: 1;
+        min-width: 0;
+        font-size: 0.88rem;
+        line-height: 1.6;
+        overflow-wrap: anywhere;
+        color: var(--ink);
+      }
+      .cmd code::before {
+        content: "$ ";
+        color: var(--gold);
+      }
+      .cmd[data-panel="windows"] code::before {
+        content: "PS> ";
+      }
+      .i {
+        width: 18px;
+        height: 18px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex: none;
+      }
+      .i.gh-mark {
+        fill: currentColor;
+        stroke: none;
+      }
+      .icon-btn {
+        flex: none;
+        display: inline-grid;
+        place-items: center;
+        width: 36px;
+        height: 36px;
+        cursor: pointer;
+        color: var(--dim);
+        background: transparent;
+        border: 1px solid var(--rule);
+        border-radius: 6px;
+        transition:
+          color 0.15s,
+          border-color 0.15s,
+          background-color 0.15s;
+      }
+      .icon-btn:hover {
+        color: var(--gold);
+        border-color: var(--gold);
+      }
+      .icon-btn.done {
+        color: var(--ground);
+        background: var(--gold);
+        border-color: var(--gold);
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+      .install-note {
+        font-size: 0.88rem;
+        color: var(--dim);
+        margin: 12px 0 0;
+      }
+
+      /* the reader demo, drawn like the app */
+      .tty {
+        background: var(--tty-bg);
+        color: var(--tty-text);
+        border-radius: 10px;
+        overflow: hidden;
+        font: 14px/1.55 var(--f-mono);
+        box-shadow:
+          0 30px 60px -30px #000,
+          0 0 0 1px #000;
+      }
+      .tty:focus-visible {
+        outline-offset: 4px;
+      }
+      .tty-chrome {
+        display: flex;
+        gap: 7px;
+        padding: 11px 13px;
+        background: #15171c;
+      }
+      .tty-chrome i {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: #3a3f4b;
+      }
+      .tty-body {
+        display: grid;
+        grid-template-columns: 27% 15% minmax(0, 1fr);
+        gap: 6px;
+        padding: 14px 8px 8px;
+        height: 380px;
+      }
+      .pane {
+        border: 1px solid var(--tty-line);
+        border-radius: 7px;
+        padding: 10px 0 4px;
+        position: relative;
+        min-height: 0;
+      }
+      .pane > div {
+        height: 100%;
+        overflow: hidden;
+      }
+      .pane.on {
+        border-color: var(--tty-accent);
+      }
+      .pane-title {
+        position: absolute;
+        top: 0;
+        left: 10px;
+        transform: translateY(-50%);
+        line-height: 1;
+        background: var(--tty-bg);
+        padding: 0 4px;
+        color: var(--tty-accent);
+        font-size: 12px;
+      }
+      .pane:not(.on) .pane-title {
+        color: var(--tty-muted);
+      }
+      .row {
+        display: block;
+        width: 100%;
+        text-align: left;
+        font: inherit;
+        color: inherit;
+        background: none;
+        border: 0;
+        padding: 1px 10px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        cursor: pointer;
+      }
+      .row.sel {
+        background: var(--tty-hl);
+        color: var(--tty-accent);
+      }
+      .verses {
+        overflow: hidden;
+        padding: 8px 10px;
+      }
+      .verse {
+        color: var(--tty-verse);
+        margin: 0 0 12px;
+        padding: 2px 6px;
+        border-radius: 2px;
+        cursor: pointer;
+      }
+      .verse.sel {
+        background: var(--tty-hl);
+        color: var(--tty-accent);
+      }
+      .tty-status {
+        background: var(--tty-status);
+        color: var(--tty-muted);
+        padding: 4px 12px;
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .tty-status b {
+        color: var(--tty-text);
+        font-weight: 400;
+      }
+      .demo-hint {
+        font-size: 0.85rem;
+        color: var(--dim);
+        margin: 12px 2px 0;
+      }
+      @media (max-width: 560px) {
+        .tty-body {
+          grid-template-columns: minmax(0, 1fr);
+          grid-template-rows: auto 1fr;
+          height: 400px;
+        }
+        .pane.chapters {
+          display: none;
+        }
+        .pane.books {
+          padding: 12px 4px 6px;
+        }
+        .pane.books > div {
+          display: flex;
+          overflow-x: auto;
+          height: auto;
+        }
+        .pane.books .row {
+          width: auto;
+          flex: none;
+        }
+      }
+
+      /* the canon */
+      .canon {
+        padding-block: 72px;
+        border-top: 1px solid var(--rule);
+      }
+      .canon-head {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 32px;
+        align-items: end;
+        margin-bottom: 40px;
+      }
+      .numeral {
+        font: 400 clamp(5rem, 14vw, 9.5rem)/0.9 var(--f-am);
+        color: var(--gold);
+      }
+      .canon-head p {
+        max-width: 58ch;
+        margin: 12px 0 0;
+        color: var(--dim);
+      }
+      .canon-head p strong {
+        color: var(--ink);
+        font-weight: 500;
+      }
+      @media (max-width: 640px) {
+        .canon-head {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 8px;
+        }
+      }
+      .testaments {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+        gap: 40px;
+      }
+      @media (max-width: 760px) {
+        .testaments {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      .books-list {
+        list-style: none;
+        margin: 14px 0 0;
+        padding: 0;
+        columns: 2 220px;
+        column-gap: 28px;
+        font: 1rem/1.9 var(--f-am);
+      }
+      .testaments > div:last-child .books-list {
+        columns: 1;
+      }
+      .books-list li {
+        break-inside: avoid;
+        display: flex;
+        gap: 10px;
+      }
+      .books-list li span {
+        font: 0.72rem/2.6 var(--f-mono);
+        color: var(--dim);
+        min-width: 2ch;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* keys */
+      /* features */
+      .features {
+        padding-block: 72px;
+        border-top: 1px solid var(--rule);
+      }
+      .features > h2 {
+        margin-bottom: 40px;
+      }
+      .feat-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 48px 40px;
+      }
+      @media (max-width: 800px) {
+        .feat-grid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      .feat {
+        display: grid;
+        gap: 14px;
+        align-content: start;
+        min-width: 0;
+      }
+      .feat h3 {
+        margin: 0;
+        font: 600 1.05rem var(--f-body);
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .mini {
+        background: var(--tty-bg);
+        border-radius: 8px;
+        padding: 20px 16px;
+        font: 13px/1.65 var(--f-mono);
+        color: var(--tty-text);
+        min-width: 0;
+        box-shadow: 0 0 0 1px #000;
+      }
+      .popup {
+        border: 1px solid var(--tty-accent);
+        border-radius: 7px;
+        position: relative;
+        padding: 12px 0 14px;
+      }
+      .popup .t,
+      .popup .h {
+        white-space: pre;
+        position: absolute;
+        left: 10px;
+        background: var(--tty-bg);
+        padding: 0 4px;
+        line-height: 1;
+        font-size: 12px;
+      }
+      .popup .t {
+        top: 0;
+        transform: translateY(-50%);
+        color: var(--tty-accent);
+      }
+      .popup .h {
+        bottom: 0;
+        transform: translateY(50%);
+        color: var(--tty-muted);
+      }
+      .popup .r {
+        white-space: pre;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding: 1px 10px;
+        color: var(--tty-verse);
+      }
+      .popup .r.sel {
+        background: var(--tty-hl);
+        color: var(--tty-accent);
+      }
+      .mini .prompt {
+        color: var(--tty-muted);
+      }
+      .mini .out {
+        color: var(--tty-verse);
+        margin: 6px 0 0;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      .mini .key {
+        color: var(--tty-accent);
+      }
+      .swatches {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .swatch {
+        font: 500 0.82rem var(--f-mono);
+        color: var(--ink);
+        background: var(--raised);
+        border: 1px solid var(--rule);
+        border-radius: 999px;
+        padding: 4px 12px 4px 8px;
+        cursor: pointer;
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .swatch i {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--c);
+      }
+      .swatch[aria-pressed="true"] {
+        border-color: var(--gold);
+      }
+      .extras {
+        list-style: none;
+        margin: 48px 0 0;
+        padding: 24px 0 0;
+        border-top: 1px solid var(--rule);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px 40px;
+        color: var(--dim);
+      }
+      .extras li {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      kbd {
+        display: inline-block;
+        min-width: 1.9em;
+        text-align: center;
+        font-size: 0.85rem;
+        padding: 2px 7px;
+        border: 1px solid var(--rule);
+        border-bottom-width: 3px;
+        border-radius: 5px;
+        background: var(--raised);
+        color: var(--ink);
+      }
+
+      /* the font */
+      .font {
+        padding-block: 72px;
+        border-top: 1px solid var(--rule);
+      }
+      .font > p {
+        max-width: 62ch;
+        color: var(--dim);
+      }
+      .cells {
+        margin: 32px 0;
+        display: grid;
+        gap: 18px;
+      }
+      .cells figure {
+        margin: 0;
+        min-width: 0;
+      }
+      .cells figcaption {
+        margin-bottom: 8px;
+      }
+      .strip {
+        overflow-x: auto;
+        padding-bottom: 4px;
+      }
+      .grid-line {
+        --cw: 15px;
+        font-size: 25px;
+        height: 46px;
+        display: flex;
+        align-items: center;
+        width: max-content;
+        background:
+          repeating-linear-gradient(
+            90deg,
+            var(--rule) 0 1px,
+            transparent 1px var(--cw)
+          ),
+          var(--raised);
+        border: 1px solid var(--rule);
+        padding-left: 1px;
+      }
+      .grid-line span {
+        display: inline-block;
+        width: var(--cw);
+        white-space: nowrap;
+        overflow: visible;
+      }
+      .grid-line.bad {
+        font-family: "Abyssinica SIL", "Noto Sans Ethiopic", serif;
+      }
+      .grid-line.good {
+        font-family: "Hibur Mono", monospace;
+      }
+      .terms {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.92rem;
+      }
+      .terms th,
+      .terms td {
+        text-align: left;
+        padding: 10px 12px 10px 0;
+        border-bottom: 1px solid var(--rule);
+        vertical-align: top;
+      }
+      .terms th {
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      .terms code {
+        font-size: 0.82rem;
+        overflow-wrap: anywhere;
+        color: var(--ink);
+      }
+      .terms td {
+        color: var(--dim);
+      }
+      details {
+        margin-top: 8px;
+      }
+      summary {
+        cursor: pointer;
+        color: var(--gold);
+        font-weight: 500;
+      }
+      .table-wrap {
+        overflow-x: auto;
+        margin-top: 16px;
+      }
+
+      /* downloads */
+      .downloads {
+        padding-block: 72px;
+        border-top: 1px solid var(--rule);
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+        gap: 48px;
+      }
+      @media (max-width: 760px) {
+        .downloads {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 24px;
+        }
+      }
+      .files {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        border-top: 1px solid var(--rule);
+      }
+      .files li {
+        display: grid;
+        grid-template-columns: 7rem minmax(0, 1fr) auto;
+        gap: 16px;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--rule);
+      }
+      .files li.mine {
+        background: linear-gradient(
+          90deg,
+          transparent,
+          var(--raised) 20%,
+          var(--raised) 80%,
+          transparent
+        );
+      }
+      .files .os {
+        font-weight: 600;
+      }
+      .files .chip {
+        color: var(--dim);
+        font-size: 0.92rem;
+      }
+      .files .icon-btn {
+        text-decoration: none;
+      }
+      .files li.mine .icon-btn {
+        color: var(--gold);
+        border-color: var(--gold);
+      }
+      @media (max-width: 480px) {
+        .files li {
+          grid-template-columns: minmax(0, 1fr) auto;
+        }
+        .files .chip {
+          grid-column: 1;
+          grid-row: 2;
+        }
+        .files a {
+          grid-row: 1 / 3;
+          grid-column: 2;
+        }
+      }
+      .downloads .note {
+        font-size: 0.88rem;
+        color: var(--dim);
+        margin: 16px 0 0;
+      }
+
+      footer {
+        border-top: 1px solid var(--rule);
+        padding-block: 40px 56px;
+        color: var(--dim);
+        font-size: 0.92rem;
+      }
+      footer .credit {
+        color: var(--ink);
+        max-width: 60ch;
+        margin: 0 0 10px;
+      }
+      footer nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-top: 18px;
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        .verse,
+        .row {
+          transition:
+            background-color 0.12s,
+            color 0.12s;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="harag" role="presentation"></div>
+    <p class="sr-only" id="live" aria-live="polite"></p>
+
+    <header class="wrap top">
+      <a class="mark" href="#"
+        ><span><b>❯</b> bible-cli</span><small id="version">v1.1.0</small></a
+      >
+      <nav>
+        <a href="#install">Install</a>
+        <a href="#features">Features</a>
+        <a href="#books">Books</a>
+        <a href="#font">Font</a>
+        <a href="#files">Downloads</a>
+        <a
+          class="gh"
+          href="https://github.com/tsegaye27/bible-cli"
+          aria-label="Source code on GitHub"
+          title="GitHub"
+          ><svg class="i gh-mark" viewBox="0 0 16 16" aria-hidden="true">
+            <path
+              d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"
+            /></svg
+        ></a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="wrap hero" id="install">
+        <div>
+          <h1 class="headline">መጽሐፍ ቅዱስ<br /><em>በተርሚናል</em></h1>
+          <p class="pitch">
+            The 81-book Amharic Bible, in your terminal. Read, search, bookmark.
+          </p>
+
+          <div class="install">
+            <div class="tabs" role="tablist" aria-label="Your system">
+              <button
+                role="tab"
+                id="tab-unix"
+                data-os="unix"
+                aria-selected="true"
+              >
+                macOS · Linux
+              </button>
+              <button
+                role="tab"
+                id="tab-windows"
+                data-os="windows"
+                aria-selected="false"
+              >
+                Windows
+              </button>
+            </div>
+            <div class="cmd" data-panel="unix">
+              <code
+                >curl -fsSL
+                https://raw.githubusercontent.com/tsegaye27/bible-cli/main/install.sh
+                | bash</code
+              >
+              <button
+                class="copy icon-btn"
+                type="button"
+                id="copy-unix"
+                aria-label="Copy command"
+                title="Copy"
+              >
+                <svg class="i" viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="9" y="9" width="12" height="12" rx="2" />
+                  <path
+                    d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div class="cmd" data-panel="windows" hidden>
+              <code
+                >irm
+                https://raw.githubusercontent.com/tsegaye27/bible-cli/main/install.ps1
+                | iex</code
+              >
+              <button
+                class="copy icon-btn"
+                type="button"
+                id="copy-windows"
+                aria-label="Copy command"
+                title="Copy"
+              >
+                <svg class="i" viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="9" y="9" width="12" height="12" rx="2" />
+                  <path
+                    d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <p class="install-note" data-note="unix">
+            Then run <code>bible-cli</code>.
+          </p>
+          <p class="install-note" data-note="windows" hidden>
+            In PowerShell. Then run <code>bible-cli</code> in a new window.
+          </p>
+        </div>
+
+        <div>
+          <div
+            class="tty"
+            id="tty"
+            tabindex="0"
+            aria-label="Bible CLI demo. Use the arrow keys or j and k to move between verses, h and l to change book, m to bookmark."
+          >
+            <div class="tty-chrome" aria-hidden="true">
+              <i></i><i></i><i></i>
+            </div>
+            <div class="tty-body">
+              <div class="pane books">
+                <span class="pane-title">መጻሕፍት</span>
+                <div id="book-rows"></div>
+              </div>
+              <div class="pane chapters">
+                <span class="pane-title">ምዕራፎች</span>
+                <div id="chapter-rows"></div>
+              </div>
+              <div class="pane on">
+                <span class="pane-title" id="verses-title">ቁጥሮች</span>
+                <div class="verses" id="verse-rows"></div>
+              </div>
+            </div>
+            <div class="tty-status" id="tty-status"></div>
+          </div>
+          <p class="demo-hint">
+            <kbd>j</kbd> <kbd>k</kbd> verses &nbsp; <kbd>h</kbd>
+            <kbd>l</kbd> books &nbsp; <kbd>m</kbd> bookmark
+          </p>
+        </div>
+      </section>
+
+      <section class="wrap features" id="features">
+        <h2>Features</h2>
+        <div class="feat-grid">
+          <div class="feat">
+            <h3><kbd>f</kbd> Search all 81 books</h3>
+            <div class="mini">
+              <div class="popup">
+                <span class="t"> "ብርሃን": 260 </span>
+                <div class="r sel">
+                  ኦሪት ዘፍጥረት 1:3 እግዚአብሔርም፦ብርሃን፡ይኹን፡አለ፤ብርሃንም፡ኾነ።
+                </div>
+                <div class="r">
+                  ኦሪት ዘፍጥረት 1:4
+                  እግዚአብሔርም፡ብርሃኑ፡መልካም፡እንደ፡ኾነ፡አየ፤እግዚአብሔርም፡ብርሃንንና፡ጨለማን፡ለየ።
+                </div>
+                <div class="r">
+                  ኦሪት ዘፍጥረት 1:16
+                  እግዚአብሔርም፡ኹለት፡ታላላቆች፡ብርሃናትን፡አደረገ፤ትልቁ፡ብርሃን፡በቀን፡እንዲሠለጥን፥ትንሹም፡ብርሃን፡በሌሊት፡እንዲሰለጥን፤ከዋክብትንም፡ደግሞ፡አደረገ።
+                </div>
+                <div class="r">
+                  ኦሪት ዘፍጥረት 1:18
+                  በቀንም፡በሌሊትም፡እንዲሠለጥኑ፥ብርሃንንና፡ጨለማንም፡እንዲለዩ፤እግዚአብሔርም፡ያ፡መልካም፡እንደ፡ኾነ፡አየ።
+                </div>
+                <div class="r">
+                  ኦሪት ዘጸአት 10:23
+                  ማንም፡ወንድሙን፡አላየም፥ሦስት፡ቀንም፡ሙሉ፡ከስፍራው፡ማንም፡አልተነሣም፤ለእስራኤል፡ልጆች፡ዅሉ፡ግን፡በተቀመጡበት፡ስፍራ፡ብርሃን፡ነበራቸው።
+                </div>
+                <span class="h"> Enter: open Esc: close </span>
+              </div>
+            </div>
+          </div>
+          <div class="feat">
+            <h3><kbd>m</kbd><kbd>b</kbd> Bookmark verses</h3>
+            <div class="mini">
+              <div class="popup">
+                <span class="t"> ዕልባቶች (Bookmarks) </span>
+                <div class="r sel">
+                  የዮሐንስ ወንጌል 3:16
+                  በርሱ፡የሚያምን፡ዅሉ፡የዘለዓለም፡ሕይወት፡እንዲኖረው፡እንጂ፡እንዳይጠፋ፡እግዚአብሔር፡አንድያ፡ልጁን፡እስኪሰጥ፡ድረስ፡ዓለሙን፡እንዲሁ፡ወዷ፟ልና።
+                </div>
+                <div class="r">
+                  የማቴዎስ ወንጌል 5:9 የሚያስተራርቁ፡ብፁዓን፡ናቸው፥የእግዚአብሔር፡ልጆች፡ይባላሉና።
+                </div>
+                <div class="r">
+                  ወደ ሮሜ ሰዎች 8:28
+                  እግዚአብሔርንም፡ለሚወዱት፡እንደ፡ዐሳቡም፡ለተጠሩት፡ነገር፡ዅሉ፡ለበጎ፡እንዲደረግ፡እናውቃለን።
+                </div>
+                <span class="h"> Enter: open d: delete Esc: close </span>
+              </div>
+            </div>
+          </div>
+          <div class="feat">
+            <h3>A verse a day</h3>
+            <div class="mini">
+              <span class="prompt">$</span> bible-cli --quote
+              <p class="out">
+                በርሱ፡የሚያምን፡ዅሉ፡የዘለዓለም፡ሕይወት፡እንዲኖረው፡እንጂ፡እንዳይጠፋ፡እግዚአብሔር፡አንድያ፡ልጁን፡እስኪሰጥ፡ድረስ፡ዓለሙን፡እንዲሁ፡ወዷ፟ልና።
+                — የዮሐንስ ወንጌል (John) 3:16
+              </p>
+            </div>
+          </div>
+          <div class="feat">
+            <h3>Your colors</h3>
+            <div class="mini">
+              <span class="prompt">~/.config/bible-cli/config.json</span>
+              <p class="out">
+                { "theme": { "accent": "<span class="key" id="accent-name"
+                  >cyan</span
+                >" } }
+              </p>
+            </div>
+            <div class="swatches" role="group" aria-label="Try an accent color">
+              <button
+                type="button"
+                class="swatch"
+                id="sw-cyan"
+                data-name="cyan"
+                style="--c: #56c8d8"
+                aria-pressed="true"
+              >
+                <i></i>cyan
+              </button>
+              <button
+                type="button"
+                class="swatch"
+                id="sw-magenta"
+                data-name="magenta"
+                style="--c: #c678dd"
+                aria-pressed="false"
+              >
+                <i></i>magenta
+              </button>
+              <button
+                type="button"
+                class="swatch"
+                id="sw-green"
+                data-name="green"
+                style="--c: #98c379"
+                aria-pressed="false"
+              >
+                <i></i>green
+              </button>
+              <button
+                type="button"
+                class="swatch"
+                id="sw-yellow"
+                data-name="yellow"
+                style="--c: #e5c07b"
+                aria-pressed="false"
+              >
+                <i></i>yellow
+              </button>
+            </div>
+          </div>
+        </div>
+        <ul class="extras">
+          <li><kbd>Enter</kbd> Copy a verse</li>
+          <li><kbd>/</kbd> Filter any list</li>
+          <li><kbd>q</kbd> Quit, and reopen where you left off</li>
+        </ul>
+      </section>
+
+      <section class="wrap canon" id="books">
+        <div class="canon-head">
+          <div class="numeral" aria-hidden="true">፹፩</div>
+          <div>
+            <div class="label">ሰማንያ አሐዱ · eighty-one</div>
+            <h2>All 81 books</h2>
+            <p>In the Ethiopian Orthodox order.</p>
+          </div>
+        </div>
+        <div class="testaments">
+          <div>
+            <div class="label">ብሉይ ኪዳን · Old Testament · 54</div>
+            <ol class="books-list" id="ot"></ol>
+          </div>
+          <div>
+            <div class="label">ሐዲስ ኪዳን · New Testament · 27</div>
+            <ol class="books-list" id="nt"></ol>
+          </div>
+        </div>
+      </section>
+
+      <section class="wrap font" id="font">
+        <h2>The font</h2>
+        <p>
+          Hibur Mono keeps Amharic letters from overlapping. The installer adds
+          it.
+        </p>
+        <div class="cells">
+          <figure>
+            <figcaption class="label">Borrowed font</figcaption>
+            <div class="strip"><div class="grid-line bad" data-line></div></div>
+          </figure>
+          <figure>
+            <figcaption class="label">Hibur Mono</figcaption>
+            <div class="strip">
+              <div class="grid-line good" data-line></div>
+            </div>
+          </figure>
+        </div>
+        <details>
+          <summary>Terminal settings</summary>
+          <div class="table-wrap">
+            <table class="terms">
+              <tr>
+                <th>Ghostty</th>
+                <td>
+                  <code
+                    >font-codepoint-map =
+                    U+1200-U+139F,U+2D80-U+2DDF,U+AB00-U+AB2F=Hibur Mono</code
+                  >
+                </td>
+              </tr>
+              <tr>
+                <th>kitty</th>
+                <td>
+                  <code
+                    >symbol_map U+1200-U+139F,U+2D80-U+2DDF,U+AB00-U+AB2F Hibur
+                    Mono</code
+                  >
+                </td>
+              </tr>
+              <tr>
+                <th>iTerm2</th>
+                <td>
+                  Settings › Profiles › Text › Use a different font for
+                  non-ASCII text › Hibur Mono
+                </td>
+              </tr>
+              <tr>
+                <th>Windows Terminal</th>
+                <td>
+                  Settings › your profile › Appearance › Font face:
+                  <code>Cascadia Mono, Hibur Mono</code>
+                </td>
+              </tr>
+              <tr>
+                <th>macOS Terminal</th>
+                <td>
+                  The installer adds a Bible profile. Open it with Shell › New
+                  Window › Bible.
+                </td>
+              </tr>
+              <tr>
+                <th>Others</th>
+                <td>
+                  <a
+                    href="https://github.com/tsegaye27/bible-cli#fonts-for-amharic"
+                    >See the README</a
+                  >
+                </td>
+              </tr>
+            </table>
+          </div>
+        </details>
+      </section>
+
+      <section class="wrap downloads" id="files">
+        <div>
+          <h2>Downloads</h2>
+        </div>
+        <div>
+          <ul class="files">
+            <li data-os="mac">
+              <span class="os">macOS</span
+              ><span class="chip">Apple Silicon</span
+              ><a
+                class="icon-btn"
+                href="https://github.com/tsegaye27/bible-cli/releases/latest/download/bible-cli-macos-aarch64"
+                aria-label="Download for macOS Apple Silicon"
+                title="Download"
+                ><svg class="i" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3v12" />
+                  <path d="m7 10 5 5 5-5" />
+                  <path d="M5 21h14" /></svg
+              ></a>
+            </li>
+            <li data-os="mac">
+              <span class="os">macOS</span><span class="chip">Intel</span
+              ><a
+                class="icon-btn"
+                href="https://github.com/tsegaye27/bible-cli/releases/latest/download/bible-cli-macos-x86_64"
+                aria-label="Download for macOS Intel"
+                title="Download"
+                ><svg class="i" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3v12" />
+                  <path d="m7 10 5 5 5-5" />
+                  <path d="M5 21h14" /></svg
+              ></a>
+            </li>
+            <li data-os="linux">
+              <span class="os">Linux</span><span class="chip">x86_64</span
+              ><a
+                class="icon-btn"
+                href="https://github.com/tsegaye27/bible-cli/releases/latest/download/bible-cli-linux-x86_64"
+                aria-label="Download for Linux x86_64"
+                title="Download"
+                ><svg class="i" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3v12" />
+                  <path d="m7 10 5 5 5-5" />
+                  <path d="M5 21h14" /></svg
+              ></a>
+            </li>
+            <li data-os="linux">
+              <span class="os">Linux</span><span class="chip">ARM64</span
+              ><a
+                class="icon-btn"
+                href="https://github.com/tsegaye27/bible-cli/releases/latest/download/bible-cli-linux-aarch64"
+                aria-label="Download for Linux ARM64"
+                title="Download"
+                ><svg class="i" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3v12" />
+                  <path d="m7 10 5 5 5-5" />
+                  <path d="M5 21h14" /></svg
+              ></a>
+            </li>
+            <li data-os="windows">
+              <span class="os">Windows</span><span class="chip">x86_64</span
+              ><a
+                class="icon-btn"
+                href="https://github.com/tsegaye27/bible-cli/releases/latest/download/bible-cli-windows-x86_64.exe"
+                aria-label="Download for Windows x86_64"
+                title="Download"
+                ><svg class="i" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3v12" />
+                  <path d="m7 10 5 5 5-5" />
+                  <path d="M5 21h14" /></svg
+              ></a>
+            </li>
+            <li data-os="windows">
+              <span class="os">Windows</span><span class="chip">ARM64</span
+              ><a
+                class="icon-btn"
+                href="https://github.com/tsegaye27/bible-cli/releases/latest/download/bible-cli-windows-aarch64.exe"
+                aria-label="Download for Windows ARM64"
+                title="Download"
+                ><svg class="i" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3v12" />
+                  <path d="m7 10 5 5 5-5" />
+                  <path d="M5 21h14" /></svg
+              ></a>
+            </li>
+          </ul>
+          <p class="note">
+            macOS, Linux: <code>chmod +x</code> the file. macOS may also need
+            <code>xattr -d com.apple.quarantine</code>.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="wrap">
+      <!-- <p class="credit">Amharic Bible text used with permission of the Bible Society of Ethiopia and the Ethiopian Orthodox Tewahedo Church Patriarchate. Free and non-commercial.</p> -->
+      <nav>
+        <a href="https://github.com/tsegaye27/bible-cli">Source code</a>
+        <a href="https://github.com/tsegaye27/bible-cli/releases"
+          >All releases</a
+        >
+        <a href="https://github.com/tsegaye27/bible-cli/issues"
+          >Report an issue</a
+        >
+      </nav>
+    </footer>
+
+    <script>
+      // ---- Install command for the visitor's system
+      const ua =
+        navigator.userAgentData?.platform ||
+        navigator.platform ||
+        navigator.userAgent;
+      const os = /Win/i.test(ua)
+        ? "windows"
+        : /Mac/i.test(ua)
+          ? "mac"
+          : /Linux|X11/i.test(ua)
+            ? "linux"
+            : null;
+      function showTab(which) {
+        document
+          .querySelectorAll("[role=tab]")
+          .forEach((t) =>
+            t.setAttribute("aria-selected", String(t.dataset.os === which)),
+          );
+        document.querySelectorAll("[data-panel],[data-note]").forEach((el) => {
+          el.hidden = (el.dataset.panel || el.dataset.note) !== which;
+        });
+      }
+      document
+        .querySelectorAll("[role=tab]")
+        .forEach((t) =>
+          t.addEventListener("click", () => showTab(t.dataset.os)),
+        );
+      showTab(os === "windows" ? "windows" : "unix");
+      document
+        .querySelectorAll(`.files li[data-os="${os}"]`)
+        .forEach((li) => li.classList.add("mine"));
+
+      const CHECK =
+        '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+      const live = document.getElementById("live");
+      document.querySelectorAll(".copy").forEach((b) =>
+        b.addEventListener("click", async () => {
+          const code = b.previousElementSibling;
+          const icon = b.innerHTML;
+          try {
+            await navigator.clipboard.writeText(code.textContent);
+            b.innerHTML = CHECK;
+            b.classList.add("done");
+            live.textContent = "Copied";
+          } catch {
+            getSelection().selectAllChildren(code);
+            live.textContent = "Command selected. Press Ctrl+C or ⌘C to copy.";
+          }
+          setTimeout(() => {
+            b.innerHTML = icon;
+            b.classList.remove("done");
+            live.textContent = "";
+          }, 1600);
+        }),
+      );
+
+      fetch("https://api.github.com/repos/tsegaye27/bible-cli/releases/latest")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((r) => {
+          if (r && r.tag_name)
+            document.getElementById("version").textContent = r.tag_name;
+        })
+        .catch(() => {});
+
+      // ---- The 81 books, in the church's order.
+      const OT = [
+        "ኦሪት ዘፍጥረት",
+        "ኦሪት ዘጸአት",
+        "ኦሪት ዘሌዋውያን",
+        "ኦሪት ዘኍልቍ",
+        "ኦሪት ዘዳግም",
+        "መጽሐፈ ኢያሱ",
+        "መጽሐፈ መሳፍንት",
+        "መጽሐፈ ሩት",
+        "መጽሐፈ ሳሙኤል ቀዳማዊ",
+        "መጽሐፈ ሳሙኤል ካልዕ",
+        "መጽሐፈ ነገሥት ቀዳማዊ",
+        "መጽሐፈ ነገሥት ካልዕ",
+        "መጽሐፈ ዜና መዋዕል ቀዳማዊ",
+        "መጽሐፈ ዜና መዋዕል ካልዕ",
+        "መጽሐፈ ኩፋሌ",
+        "መጽሐፈ ሄኖክ",
+        "መጽሐፈ ዕዝራ",
+        "መጽሐፈ ነህምያ",
+        "መጽሐፈ ዕዝራ ሱቱኤል",
+        "መጽሐፈ ዕዝራ ካልእ",
+        "መጽሐፈ ጦቢት",
+        "መጽሐፈ ዮዲት",
+        "መጽሐፈ አስቴር",
+        "መጽሐፈ መቃብያን ቀዳማዊ",
+        "መጽሐፈ መቃብያን ካልእ",
+        "መጽሐፈ መቃብያን ሣልስ",
+        "መጽሐፈ ኢዮብ",
+        "መዝሙረ ዳዊት",
+        "መጽሐፈ ምሳሌ",
+        "መጽሐፈ ተግሣጽ",
+        "መጽሐፈ ጥበብ",
+        "መጽሐፈ መክብብ",
+        "መኃልየ መኃልይ ዘሰሎሞን",
+        "መጽሐፈ ሲራክ",
+        "ትንቢተ ኢሳይያስ",
+        "ትንቢተ ኤርምያስ",
+        "መጽሐፈ ባሮክ",
+        "ሰቆቃወ ኤርምያስ",
+        "ተረፈ ኤርምያስ",
+        "ተረፈ ባሮክ",
+        "ትንቢተ ሕዝቅኤል",
+        "ትንቢተ ዳንኤል",
+        "ትንቢተ ሆሴዕ",
+        "ትንቢተ ዓሞጽ",
+        "ትንቢተ ሚክያስ",
+        "ትንቢተ ኢዮኤል",
+        "ትንቢተ አብድዩ",
+        "ትንቢተ ዮናስ",
+        "ትንቢተ ናሆም",
+        "ትንቢተ ዕንባቆም",
+        "ትንቢተ ሶፎንያስ",
+        "ትንቢተ ሐጌ",
+        "ትንቢተ ዘካርያስ",
+        "ትንቢተ ሚልክያስ",
+      ];
+      const NT = [
+        "የማቴዎስ ወንጌል",
+        "የማርቆስ ወንጌል",
+        "የሉቃስ ወንጌል",
+        "የዮሐንስ ወንጌል",
+        "የሐዋርያት ሥራ",
+        "ወደ ሮሜ ሰዎች",
+        "1ኛ ወደ ቆሮንቶስ ሰዎች",
+        "2ኛ ወደ ቆሮንቶስ ሰዎች",
+        "ወደ ገላትያ ሰዎች",
+        "ወደ ኤፌሶን ሰዎች",
+        "ወደ ፊልጵስዩስ ሰዎች",
+        "ወደ ቆላስይስ ሰዎች",
+        "1ኛ ወደ ተሰሎንቄ ሰዎች",
+        "2ኛ ወደ ተሰሎንቄ ሰዎች",
+        "1ኛ ወደ ጢሞቴዎስ",
+        "2ኛ ወደ ጢሞቴዎስ",
+        "ወደ ቲቶ",
+        "ወደ ፊልሞና",
+        "ወደ ዕብራውያን",
+        "1ኛ የጴጥሮስ መልእክት",
+        "2ኛ የጴጥሮስ መልእክት",
+        "1ኛ የዮሐንስ መልእክት",
+        "2ኛ የዮሐንስ መልእክት",
+        "3ኛ የዮሐንስ መልእክት",
+        "የያዕቆን መልእክት",
+        "የይሁዳ መልእክት",
+        "የዮሐንስ ራዕይ",
+      ];
+      function fillBooks(id, names, start) {
+        document.getElementById(id).innerHTML = names
+          .map((n, i) => {
+            return `<li><span>${start + i}</span>${n}</li>`;
+          })
+          .join("");
+      }
+      fillBooks("ot", OT, 1);
+      fillBooks("nt", NT, 55);
+
+      // ---- Font demonstration: the same verse on a terminal grid
+      const line = "እግዚአብሔርም፦ብርሃን፡ይኹን፡አለ፤ብርሃንም፡ኾነ።";
+      document.querySelectorAll("[data-line]").forEach((el) => {
+        el.innerHTML = [...line].map((c) => `<span>${c}</span>`).join("");
+      });
+
+      // ---- Reader demo. Verse text is copied exactly from the app's data.
+      const BOOKS = [
+        {
+          name: "ኦሪት ዘፍጥረት",
+          num: 1,
+          chapter: 1,
+          chapters: 50,
+          total: 31,
+          verses: [
+            "በመዠመሪያ፡እግዚአብሔር፡ሰማይንና፡ምድርን፡ፈጠረ።",
+            "ምድርም፡ባዶ፡ነበረች፥አንዳችም፡አልነበረባትም፤ጨለማም፡በጥልቁ፡ላይ፡ነበረ፤የእግዚአብሔርም፡መንፈስ፡በውሃ፡ላይ፡ሰፎ፟፡ነበር።",
+            "እግዚአብሔርም፦ብርሃን፡ይኹን፡አለ፤ብርሃንም፡ኾነ።",
+            "እግዚአብሔርም፡ብርሃኑ፡መልካም፡እንደ፡ኾነ፡አየ፤እግዚአብሔርም፡ብርሃንንና፡ጨለማን፡ለየ።",
+            "እግዚአብሔርም፡ብርሃኑን፡ቀን፡ብሎ፡ጠራው፥ጨለማውንም፡ሌሊት፡አለው።ማታም፡ኾነ፥ጧትም፡ኾነ፥አንድ፡ቀን",
+          ],
+        },
+        {
+          name: "የማቴዎስ ወንጌል",
+          num: 55,
+          chapter: 5,
+          chapters: 28,
+          total: 47,
+          first: 3,
+          verses: [
+            "በመንፈስ፡ድኻዎች፡የኾኑ፡ብፁዓን፡ናቸው፥መንግሥተ፡ሰማያት፡የእነርሱ፡ናትና።",
+            "የሚያዝኑ፡ብፁዓን፡ናቸው፥መጽናናትን፡ያገኛሉና።",
+            "የዋሆች፡ብፁዓን፡ናቸው፥ምድርን፡ይወርሳሉና።",
+            "ጽድቅን፡የሚራቡና፡የሚጠሙ፡ብፁዓን፡ናቸው፥ይጠግባሉና።",
+            "የሚምሩ፡ብፁዓን፡ናቸው፥ይማራሉና።",
+            "ልበ፡ንጹሖች፡ብፁዓን፡ናቸው፥እግዚአብሔርን፡ያዩታልና።",
+          ],
+        },
+        {
+          name: "የዮሐንስ ወንጌል",
+          num: 58,
+          chapter: 1,
+          chapters: 21,
+          total: 51,
+          verses: [
+            "በመዠመሪያው፡ቃል፡ነበረ፥ቃልም፡በእግዚአብሔር፡ዘንድ፡ነበረ፥ቃልም፡እግዚአብሔር፡ነበረ።",
+            "ይህ፡በመዠመሪያው፡በእግዚአብሔር፡ዘንድ፡ነበረ።",
+            "ዅሉ፡በርሱ፡ኾነ፥ከኾነውም፡አንዳች፡ስንኳ፡ያለርሱ፡አልኾነም።",
+            "በርሱ፡ሕይወት፡ነበረች፥ሕይወትም፡የሰው፡ብርሃን፡ነበረች።",
+            "ብርሃንም፡በጨለማ፡ይበራል፥ጨለማም፡አላሸነፈውም።",
+          ],
+        },
+      ];
+      const state = { book: 0, verse: 0, marks: new Set() };
+      const $ = (id) => document.getElementById(id);
+      function render() {
+        const b = BOOKS[state.book],
+          first = b.first || 1;
+        $("book-rows").innerHTML = BOOKS.map(
+          (x, i) =>
+            `<button type="button" class="row ${i === state.book ? "sel" : ""}" data-book="${i}">${String(x.num).padStart(2, "0")} ${x.name}</button>`,
+        ).join("");
+        $("chapter-rows").innerHTML = Array.from(
+          { length: 9 },
+          (_, i) =>
+            `<div class="row ${i + 1 === b.chapter ? "sel" : ""}">ምዕራፍ ${i + 1}</div>`,
+        ).join("");
+        $("verse-rows").innerHTML = b.verses
+          .map((t, i) => {
+            const key = b.num + ":" + (first + i);
+            return `<p class="verse ${i === state.verse ? "sel" : ""}" data-verse="${i}">${state.marks.has(key) ? "★ " : ""}${first + i}. ${t}</p>`;
+          })
+          .join("");
+        $("verses-title").textContent =
+          `ቁጥሮች ${first + state.verse}/${b.total}`;
+        $("tty-status").innerHTML =
+          `[q] Quit [/] Filter [f] Search all [m] Bookmark [b] Bookmarks | <b>${b.name} ${b.chapter}:${first + state.verse}</b>`;
+      }
+      function move(dv, db) {
+        if (db) {
+          state.book = (state.book + db + BOOKS.length) % BOOKS.length;
+          state.verse = 0;
+        }
+        const n = BOOKS[state.book].verses.length;
+        state.verse = Math.max(0, Math.min(n - 1, state.verse + dv));
+        render();
+      }
+      const tty = $("tty");
+      tty.addEventListener("keydown", (e) => {
+        const k = e.key;
+        if (k === "j" || k === "ArrowDown") move(1, 0);
+        else if (k === "k" || k === "ArrowUp") move(-1, 0);
+        else if (k === "l" || k === "ArrowRight") move(0, 1);
+        else if (k === "h" || k === "ArrowLeft") move(0, -1);
+        else if (k === "m") {
+          const b = BOOKS[state.book],
+            key = b.num + ":" + ((b.first || 1) + state.verse);
+          state.marks.has(key) ? state.marks.delete(key) : state.marks.add(key);
+          render();
+        } else return;
+        e.preventDefault();
+      });
+      tty.addEventListener("click", (e) => {
+        const book = e.target.closest("[data-book]"),
+          verse = e.target.closest("[data-verse]");
+        if (book) {
+          state.book = +book.dataset.book;
+          state.verse = 0;
+        }
+        if (verse) state.verse = +verse.dataset.verse;
+        render();
+        tty.focus({ preventScroll: true });
+      });
+      render();
+
+      // ---- Accent color preview: recolors every terminal on the page
+      document.querySelectorAll(".swatch").forEach((b) =>
+        b.addEventListener("click", () => {
+          document.documentElement.style.setProperty(
+            "--tty-accent",
+            getComputedStyle(b).getPropertyValue("--c"),
+          );
+          document.getElementById("accent-name").textContent = b.dataset.name;
+          document
+            .querySelectorAll(".swatch")
+            .forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+        }),
+      );
+    </script>
+  </body>
+</html>

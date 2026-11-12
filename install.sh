@@ -62,20 +62,76 @@ if ! curl -fL "$DOWNLOAD_URL" -o "$TMP_FILE"; then
 fi
 echo "Download successful."
 
+# Hibur Mono: a monospaced Ethiopic font (SIL Open Font License 1.1), so
+# Amharic letters fit the terminal grid instead of overlapping.
+# Set BIBLE_CLI_NO_FONT=1 to skip.
+FONT_URL="https://raw.githubusercontent.com/google/fonts/main/ofl/hiburmono/HiburMono-Regular.ttf"
+FONT_FILE="HiburMono-Regular.ttf"
+FONT_INSTALLED=0
+
+install_font() {
+    if [ "${BIBLE_CLI_NO_FONT:-0}" = "1" ]; then
+        return
+    fi
+
+    local font_tmp
+    font_tmp="$(mktemp "${TMPDIR:-/tmp}/${FONT_FILE}.XXXXXX")"
+    echo "Downloading the Hibur Mono font for Amharic..."
+    if ! curl -fsSL "$FONT_URL" -o "$font_tmp"; then
+        rm -f "$font_tmp"
+        echo "Warning: could not download the font. Bible CLI still works; see the font notes below."
+        return
+    fi
+
+    case "$PLATFORM" in
+        macos)
+            mkdir -p "$HOME/Library/Fonts"
+            mv "$font_tmp" "$HOME/Library/Fonts/$FONT_FILE"
+            ;;
+        linux)
+            local font_dir="${XDG_DATA_HOME:-$HOME/.local/share}/fonts"
+            mkdir -p "$font_dir"
+            mv "$font_tmp" "$font_dir/$FONT_FILE"
+            if command -v fc-cache >/dev/null 2>&1; then
+                fc-cache -f "$font_dir" >/dev/null 2>&1 || true
+            fi
+            ;;
+        windows)
+            # Per-user font install: no admin rights needed (Windows 10 1809+).
+            local win_tmp
+            win_tmp="$(cygpath -w "$font_tmp" 2>/dev/null || echo "$font_tmp")"
+            if ! powershell.exe -NoProfile -Command "
+                \$dir = Join-Path \$env:LOCALAPPDATA 'Microsoft\\Windows\\Fonts'
+                New-Item -ItemType Directory -Force -Path \$dir | Out-Null
+                \$dest = Join-Path \$dir '$FONT_FILE'
+                Copy-Item -Force '$win_tmp' \$dest
+                New-ItemProperty -Force -Path 'HKCU:\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts' -Name 'Hibur Mono Regular (TrueType)' -Value \$dest | Out-Null
+            "; then
+                rm -f "$font_tmp"
+                echo "Warning: could not install the font."
+                return
+            fi
+            rm -f "$font_tmp"
+            ;;
+    esac
+    FONT_INSTALLED=1
+}
+
 print_success() {
     echo "----------------------------------------"
     echo "Successfully installed Bible CLI!"
     echo "You can now run it by typing: $BINARY_NAME"
     echo "----------------------------------------"
-    echo "Font Recommendations for Amharic:"
-    echo "----------------------------------------"
-    echo "1. Abyssinica SIL (Highly Recommended)"
-    echo "2. Noto Sans Ethiopic"
-    echo "3. Kawsar"
-    echo "4. FiraGO"
-    echo ""
-    echo "Make sure to set your terminal font to one of these"
-    echo "to see Amharic characters correctly."
+    if [ "$FONT_INSTALLED" = "1" ]; then
+        echo "Installed the Hibur Mono font."
+        echo "Set your terminal font to \"Hibur Mono\" so Amharic"
+        echo "letters line up without overlapping."
+    else
+        echo "For Amharic, set your terminal font to one that"
+        echo "covers Ethiopic, ideally the monospaced Hibur Mono:"
+        echo "  https://fonts.google.com/specimen/Hibur+Mono"
+        echo "Other options: Noto Sans Ethiopic, Abyssinica SIL."
+    fi
     echo "----------------------------------------"
 }
 
@@ -110,6 +166,7 @@ if [ "$PLATFORM" = "windows" ]; then
         *) export PATH="$INSTALL_DIR:$PATH" ;;
     esac
 
+    install_font
     print_success
     echo ""
     echo "Note: Open a new terminal if $BINARY_NAME is not found."
@@ -118,6 +175,7 @@ else
     chmod +x "$TMP_FILE"
     echo "Moving binary to $INSTALL_PATH (Sudo password may be required)..."
     if sudo mv "$TMP_FILE" "$INSTALL_PATH"; then
+        install_font
         print_success
     else
         echo "Error: Failed to move binary to $INSTALL_PATH."

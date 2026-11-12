@@ -43,11 +43,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "irm 'https://raw.githubu
 
 To see Amharic characters correctly, you **must** use a terminal font that supports Ethiopic characters.
 
-**Recommended Fonts:**
-1. **[Abyssinica SIL](https://software.sil.org/abyssinica/)** (Highly Recommended)
-2. **Noto Sans Ethiopic** (Standard)
-3. **Kawsar** (Clear and modern)
-4. **FiraGO** (Excellent multi-script support)
+The installers download and install **[Hibur Mono](https://fonts.google.com/specimen/Hibur+Mono)** for you (SIL Open Font License 1.1). It is monospaced, with Ethiopic letters designed to fit the terminal grid, so they don't overlap the way proportional Ethiopic fonts do. Set it as your terminal font after installing. To skip the font, run the installer with `BIBLE_CLI_NO_FONT=1`.
+
+Other fonts that cover Ethiopic, though they are not monospaced and may overlap: **[Abyssinica SIL](https://software.sil.org/abyssinica/)**, **Noto Sans Ethiopic**.
 
 #### How to change terminal font:
 - **macOS (Terminal.app)**: Settings > Profiles > Text > Font.

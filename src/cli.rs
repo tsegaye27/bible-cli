@@ -27,6 +27,9 @@ pub const HELP: &str = concat!(
     "    b                List bookmarks (d deletes one)\n",
     "    g / G            Jump to the first / last item\n",
     "    q, Esc           Quit\n",
+    "\n",
+    "Amharic Bible text used with permission of the Bible Society of Ethiopia\n",
+    "and the Ethiopian Orthodox Tewahedo Church Patriarchate. Free and non-commercial.\n",
 );
 
 /// What the user asked the program to do.

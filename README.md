@@ -135,6 +135,12 @@ Bible CLI keeps two files in its config directory:
 
 Every key is optional. Values are color names, `#rrggbb` hex codes, or 256-color indexes. If the file has a typo, the app opens with the default colors and shows the error in the status bar.
 
+## Bible text
+
+Amharic Bible text used with permission of the Bible Society of Ethiopia and the Ethiopian Orthodox Tewahedo Church Patriarchate. Free and non-commercial.
+
+The text is the Ethiopian Orthodox Tewahedo Church's 81-book Bible (1980 E.C. edition), as transcribed in the EthioApps *Amharic 81 Orthodox Bible* app. Under the terms of that permission, Bible CLI must stay free and non-commercial, and the text must not be sold or monetized in any way.
+
 ## Deployment
 
 This application is **completely self-contained**. The Bible data is embedded into the binary at compile time.
